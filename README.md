@@ -1,30 +1,51 @@
-# Khalsa Syllabus Tracker
+# Khalsa CBSE Syllabus Tracker
 
-A lightweight web app for Sri Chaitanya School – Khalsa CBSE Branch to upload year plans, track weekly syllabus progress, identify lagging periods, and generate teacher/class/subject reports.
+This repository reconstructs the previously built **Khalsa CBSE – Syllabus Lagging Tracker** from the preserved app screenshots, workflow requirements and school master-data rules.
 
-## Current rebuild
+## Preserved previous-app structure
 
-This repository is being rebuilt from the working requirements of the Khalsa Syllabus Tracker.
+- Secure staff login screen
+- Dark-blue desktop sidebar
+- Mobile header and fixed bottom navigation
+- Dashboard
+- Year Plans
+- Weekly Status
+- Reports
+- Users
+- Setup
+- Install App / Help / sync-status controls
+- Super Admin, Admin, HOD and Teacher role model
+- HOD department scope and Teacher class-subject scope
+- Department → Classes & Sections → Subjects selection workflow
+- Orientation master with Edit / Disable / Delete actions
+- Bulk-import preview with class, teacher, subject and mapping validation
 
-### Included in this version
-- Dashboard with class/section status cards
-- Year Plan upload and local parsing for CSV/XLSX/PDF
-- Class / orientation / subject mapping
-- Weekly syllabus status entry
-- Automatic lag-status calculation
-- Teacher-wise, class-wise and subject-wise reports
-- CSV report export
-- Local JSON backup / restore
-- PWA-friendly static structure
+## Academic sections
 
-### Class mapping used
-- 6A – C Batch, 6B – C Batch, 6C – Lead
-- 7A – C Batch, 7B – C Batch, 7C – Lead
-- 8A – C Batch, 8B – C Batch, 8C – Lead, 8D – Techno
-- 9A – C Batch, 9B – C Batch, 9C – Lead, 9D – Techno
-- 10A – C Batch, 10B – C Batch, 10C – Techno
+- 6A = C5A · C Batch
+- 6B = C5B · C Batch
+- 6C = L5 · Lead
+- 7A = C4A · C Batch
+- 7B = C4B · C Batch
+- 7C = L4 · Lead
+- 8A = C3A · C Batch
+- 8B = C3B · C Batch
+- 8C = L3 · Lead
+- 8D = 8th Techno · Techno
+- 9A = C2A · C Batch
+- 9B = C2B · C Batch
+- 9C = L2 · Lead
+- 9D = 9th Techno · Techno
+- 10A = C1A · C Batch
+- 10B = C1B · C Batch
+- 10C = 10th Techno · Techno
 
-## Run locally
-Open `index.html` in a modern browser, or serve the folder with any static web server.
+## Current reconstruction status
 
-All data is currently stored in the browser using localStorage. A shared online database/auth layer can be connected later without changing the core tracking workflow.
+The browser UI and core workflow are functional. XLSX/XLS/CSV Year Plans can be preview-parsed locally and weekly rows are detected where recognizable headings exist. PDF files are indexed, but the original server-side PDF storage/parsing and central database are not yet connected.
+
+Authentication, file storage and the **LIVE SYNC** indicator are currently local-preview behavior. Before production use, the app should be connected to a shared backend/database so every staff device sees the same data and uploaded files remain available after the original browser session.
+
+## Run
+
+Serve the repository as a static site or open `index.html` in a modern browser. Data is stored in browser `localStorage` until the shared backend is connected.
