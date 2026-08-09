@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#0f4c81" />
+  <title>Khalsa Syllabus Tracker</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs" type="module"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">KS</div>
+        <div><strong>Khalsa Syllabus</strong><span>Tracker</span></div>
+      </div>
+      <nav>
+        <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+        <button class="nav-btn" data-view="yearplans">Year Plans</button>
+        <button class="nav-btn" data-view="weekly">Weekly Tracking</button>
+        <button class="nav-btn" data-view="reports">Reports</button>
+        <button class="nav-btn" data-view="setup">Initial Setup</button>
+      </nav>
+      <div class="sidebar-footer">Sri Chaitanya School<br>Khalsa CBSE Branch</div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1 id="pageTitle">Dashboard</h1>
+          <p id="pageSubtitle">Weekly syllabus progress at a glance</p>
+        </div>
+        <div class="top-actions">
+          <button id="backupBtn" class="secondary">Backup</button>
+          <label class="secondary file-label">Restore<input id="restoreInput" type="file" accept="application/json" hidden></label>
+        </div>
+      </header>
+
+      <section id="dashboard" class="view active">
+        <div class="stats-grid">
+          <article class="stat"><span>Total Sections</span><strong id="statSections">0</strong></article>
+          <article class="stat"><span>Year Plans</span><strong id="statPlans">0</strong></article>
+          <article class="stat"><span>On Track</span><strong id="statOnTrack">0</strong></article>
+          <article class="stat danger"><span>Lagging</span><strong id="statLagging">0</strong></article>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Section Status</h2><select id="dashboardWeek"></select></div>
+          <div id="sectionCards" class="section-grid"></div>
+        </div>
+      </section>
+
+      <section id="yearplans" class="view">
+        <div class="panel">
+          <div class="panel-head"><h2>Upload Year Plan</h2><span class="hint">Excel / CSV / PDF</span></div>
+          <div class="form-grid">
+            <label>Class / Section<select id="ypSection"></select></label>
+            <label>Program<select id="ypProgram"><option>C Batch</option><option>Lead</option><option>Techno</option></select></label>
+            <label>Subject<input id="ypSubject" placeholder="e.g. Mathematics Track A"></label>
+            <label>Teacher<input id="ypTeacher" placeholder="Teacher name"></label>
+            <label class="full">Year Plan File<input id="ypFile" type="file" accept=".xlsx,.xls,.csv,.pdf"></label>
+          </div>
+          <div class="actions"><button id="savePlanBtn">Save Year Plan</button></div>
+          <p id="planStatus" class="status"></p>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Uploaded Year Plans</h2><input id="planSearch" placeholder="Search plans"></div>
+          <div class="table-wrap"><table><thead><tr><th>Section</th><th>Program</th><th>Subject</th><th>Teacher</th><th>File</th><th>Status</th><th></th></tr></thead><tbody id="planTable"></tbody></table></div>
+        </div>
+      </section>
+
+      <section id="weekly" class="view">
+        <div class="panel">
+          <div class="panel-head"><h2>Weekly Syllabus Entry</h2><span class="hint">Planned vs actual progress</span></div>
+          <div class="form-grid">
+            <label>Week<select id="wkWeek"></select></label>
+            <label>Class / Section<select id="wkSection"></select></label>
+            <label>Subject<input id="wkSubject" placeholder="Subject"></label>
+            <label>Teacher<input id="wkTeacher" placeholder="Teacher"></label>
+            <label class="full">Planned Topic<textarea id="wkPlanned" rows="2" placeholder="Topic as per year plan"></textarea></label>
+            <label class="full">Topic Currently Taught<textarea id="wkActual" rows="2" placeholder="Actual topic completed / in progress"></textarea></label>
+            <label>Planned Periods<input id="wkPlannedPeriods" type="number" min="0" value="0"></label>
+            <label>Periods Taken<input id="wkTakenPeriods" type="number" min="0" value="0"></label>
+            <label>Periods Lagging<input id="wkLagPeriods" type="number" min="0" value="0"></label>
+            <label>Reason<input id="wkReason" placeholder="Reason for lag, if any"></label>
+          </div>
+          <div class="actions"><button id="saveWeeklyBtn">Save Weekly Entry</button></div>
+          <p id="weeklyStatus" class="status"></p>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Recent Entries</h2></div>
+          <div class="table-wrap"><table><thead><tr><th>Week</th><th>Section</th><th>Subject</th><th>Teacher</th><th>Lag</th><th>Status</th><th></th></tr></thead><tbody id="weeklyTable"></tbody></table></div>
+        </div>
+      </section>
+
+      <section id="reports" class="view">
+        <div class="panel">
+          <div class="panel-head"><h2>Reports</h2><button id="exportCsvBtn" class="secondary">Export CSV</button></div>
+          <div class="form-grid report-filters">
+            <label>View By<select id="reportMode"><option value="teacher">Teacher</option><option value="class">Class</option><option value="subject">Subject</option><option value="week">Week</option></select></label>
+            <label>Filter<input id="reportFilter" placeholder="Type to filter"></label>
+          </div>
+          <div id="reportSummary" class="report-summary"></div>
+          <div class="table-wrap"><table><thead><tr><th>Week</th><th>Class</th><th>Subject</th><th>Teacher</th><th>Planned</th><th>Actual</th><th>Lag</th><th>Status</th></tr></thead><tbody id="reportTable"></tbody></table></div>
+        </div>
+      </section>
+
+      <section id="setup" class="view">
+        <div class="panel">
+          <div class="panel-head"><h2>Initial Setup</h2><span class="hint">Sections and academic structure</span></div>
+          <div id="setupGrid" class="setup-grid"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
