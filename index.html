@@ -2,119 +2,186 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="theme-color" content="#0f4c81" />
-  <title>Khalsa Syllabus Tracker</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#173f78" />
+  <title>Khalsa CBSE | Syllabus Tracker</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs" type="module"></script>
 </head>
 <body>
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-mark">KS</div>
-        <div><strong>Khalsa Syllabus</strong><span>Tracker</span></div>
+  <section id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="sc-mark blue">SC</div>
+        <div>
+          <div class="eyebrow">SRI CHAITANYA SCHOOL</div>
+          <h1>Khalsa CBSE Branch</h1>
+          <p>Syllabus Lagging Tracker</p>
+        </div>
       </div>
-      <nav>
-        <button class="nav-btn active" data-view="dashboard">Dashboard</button>
-        <button class="nav-btn" data-view="yearplans">Year Plans</button>
-        <button class="nav-btn" data-view="weekly">Weekly Tracking</button>
-        <button class="nav-btn" data-view="reports">Reports</button>
-        <button class="nav-btn" data-view="setup">Initial Setup</button>
+      <div class="login-divider"></div>
+      <div class="eyebrow blue-text">SECURE STAFF LOGIN</div>
+      <h2>Welcome back</h2>
+      <p class="muted">Use the username and password provided by your school Admin.</p>
+      <label>Username<input id="loginUsername" autocomplete="username" placeholder="Username" /></label>
+      <label>Password
+        <span class="password-field"><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Password" /><button id="togglePassword" type="button" class="link-btn">Show</button></span>
+      </label>
+      <div id="loginError" class="login-error hidden"></div>
+      <button id="loginBtn" class="primary wide">Sign in</button>
+      <div class="info-note">ⓘ No OTP or invitation message is required. Contact the school Admin if you need a username or password reset.</div>
+    </div>
+  </section>
+
+  <div id="appShell" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="side-brand">
+        <div class="sc-mark">SC</div>
+        <div><strong>Khalsa CBSE</strong><small>Syllabus Tracker</small></div>
+      </div>
+      <div class="side-rule"></div>
+      <nav class="side-nav" id="sideNav">
+        <button class="nav-btn active" data-view="dashboard"><span>D</span>Dashboard</button>
+        <button class="nav-btn" data-view="yearplans"><span>Y</span>Year Plans</button>
+        <button class="nav-btn" data-view="weekly"><span>W</span>Weekly Status</button>
+        <button class="nav-btn" data-view="reports"><span>R</span>Reports</button>
+        <button class="nav-btn" data-view="users"><span>U</span>Users</button>
+        <button class="nav-btn" data-view="setup"><span>S</span>Setup</button>
       </nav>
-      <div class="sidebar-footer">Sri Chaitanya School<br>Khalsa CBSE Branch</div>
+      <div class="side-footer">
+        <div class="workspace-box"><span class="live-dot"></span><div><strong>Live workspace</strong><small>Saved centrally · 2026-27</small></div></div>
+        <div class="profile-box"><div class="avatar">UJ</div><div><strong id="profileName">Staff User</strong><small id="profileRole">Staff</small></div><button id="logoutBtn" title="Sign out">↪</button></div>
+      </div>
     </aside>
 
-    <main class="main">
+    <div class="content-shell">
       <header class="topbar">
-        <div>
-          <h1 id="pageTitle">Dashboard</h1>
-          <p id="pageSubtitle">Weekly syllabus progress at a glance</p>
-        </div>
+        <div class="school-title"><div class="eyebrow">SRI CHAITANYA SCHOOL</div><strong>Khalsa CBSE Branch · Hayathnagar</strong></div>
         <div class="top-actions">
-          <button id="backupBtn" class="secondary">Backup</button>
-          <label class="secondary file-label">Restore<input id="restoreInput" type="file" accept="application/json" hidden></label>
+          <button id="installBtn" class="top-btn">⬇ Install App</button>
+          <span class="sync-pill">LIVE SYNC</span>
+          <span id="alertCount" class="alert-pill">0</span>
+          <button id="helpBtn" class="top-btn">Help</button>
+          <button id="logoutTopBtn" class="top-btn icon-only" title="Sign out">↪</button>
         </div>
       </header>
 
-      <section id="dashboard" class="view active">
-        <div class="stats-grid">
-          <article class="stat"><span>Total Sections</span><strong id="statSections">0</strong></article>
-          <article class="stat"><span>Year Plans</span><strong id="statPlans">0</strong></article>
-          <article class="stat"><span>On Track</span><strong id="statOnTrack">0</strong></article>
-          <article class="stat danger"><span>Lagging</span><strong id="statLagging">0</strong></article>
-        </div>
-        <div class="panel">
-          <div class="panel-head"><h2>Section Status</h2><select id="dashboardWeek"></select></div>
-          <div id="sectionCards" class="section-grid"></div>
-        </div>
-      </section>
+      <header class="mobile-header">
+        <div class="sc-mark blue">SC</div><strong>Syllabus Tracker</strong><span id="mobileAlertCount" class="mobile-alert">0</span><button id="mobileHelpBtn">Help</button>
+      </header>
 
-      <section id="yearplans" class="view">
-        <div class="panel">
-          <div class="panel-head"><h2>Upload Year Plan</h2><span class="hint">Excel / CSV / PDF</span></div>
-          <div class="form-grid">
-            <label>Class / Section<select id="ypSection"></select></label>
-            <label>Program<select id="ypProgram"><option>C Batch</option><option>Lead</option><option>Techno</option></select></label>
-            <label>Subject<input id="ypSubject" placeholder="e.g. Mathematics Track A"></label>
-            <label>Teacher<input id="ypTeacher" placeholder="Teacher name"></label>
-            <label class="full">Year Plan File<input id="ypFile" type="file" accept=".xlsx,.xls,.csv,.pdf"></label>
+      <main class="main-content">
+        <section id="dashboard" class="view active">
+          <div class="page-head"><div><div class="eyebrow blue-text">ACADEMIC YEAR 2026-27</div><h2>Dashboard</h2><p>Weekly syllabus progress and lagging summary.</p></div><select id="dashboardWeek" class="compact-select"></select></div>
+          <div class="stats-grid">
+            <article class="metric"><small>ACTIVE YEAR PLANS</small><strong id="statPlans">0</strong><span>uploaded plans</span></article>
+            <article class="metric"><small>WEEKLY UPDATES</small><strong id="statUpdates">0</strong><span>status records</span></article>
+            <article class="metric good"><small>ON TRACK</small><strong id="statOnTrack">0</strong><span>class-subject records</span></article>
+            <article class="metric bad"><small>LAGGING</small><strong id="statLagging">0</strong><span>needs follow-up</span></article>
           </div>
-          <div class="actions"><button id="savePlanBtn">Save Year Plan</button></div>
-          <p id="planStatus" class="status"></p>
-        </div>
-        <div class="panel">
-          <div class="panel-head"><h2>Uploaded Year Plans</h2><input id="planSearch" placeholder="Search plans"></div>
-          <div class="table-wrap"><table><thead><tr><th>Section</th><th>Program</th><th>Subject</th><th>Teacher</th><th>File</th><th>Status</th><th></th></tr></thead><tbody id="planTable"></tbody></table></div>
-        </div>
-      </section>
-
-      <section id="weekly" class="view">
-        <div class="panel">
-          <div class="panel-head"><h2>Weekly Syllabus Entry</h2><span class="hint">Planned vs actual progress</span></div>
-          <div class="form-grid">
-            <label>Week<select id="wkWeek"></select></label>
-            <label>Class / Section<select id="wkSection"></select></label>
-            <label>Subject<input id="wkSubject" placeholder="Subject"></label>
-            <label>Teacher<input id="wkTeacher" placeholder="Teacher"></label>
-            <label class="full">Planned Topic<textarea id="wkPlanned" rows="2" placeholder="Topic as per year plan"></textarea></label>
-            <label class="full">Topic Currently Taught<textarea id="wkActual" rows="2" placeholder="Actual topic completed / in progress"></textarea></label>
-            <label>Planned Periods<input id="wkPlannedPeriods" type="number" min="0" value="0"></label>
-            <label>Periods Taken<input id="wkTakenPeriods" type="number" min="0" value="0"></label>
-            <label>Periods Lagging<input id="wkLagPeriods" type="number" min="0" value="0"></label>
-            <label>Reason<input id="wkReason" placeholder="Reason for lag, if any"></label>
+          <div class="panel">
+            <div class="panel-head"><div><div class="eyebrow">CLASSES & SECTIONS</div><h3>Section status</h3></div><button id="dashboardAllBtn" class="outline-btn">All 17 sections</button></div>
+            <div id="sectionCards" class="section-grid"></div>
           </div>
-          <div class="actions"><button id="saveWeeklyBtn">Save Weekly Entry</button></div>
-          <p id="weeklyStatus" class="status"></p>
-        </div>
-        <div class="panel">
-          <div class="panel-head"><h2>Recent Entries</h2></div>
-          <div class="table-wrap"><table><thead><tr><th>Week</th><th>Section</th><th>Subject</th><th>Teacher</th><th>Lag</th><th>Status</th><th></th></tr></thead><tbody id="weeklyTable"></tbody></table></div>
-        </div>
-      </section>
+        </section>
 
-      <section id="reports" class="view">
-        <div class="panel">
-          <div class="panel-head"><h2>Reports</h2><button id="exportCsvBtn" class="secondary">Export CSV</button></div>
-          <div class="form-grid report-filters">
-            <label>View By<select id="reportMode"><option value="teacher">Teacher</option><option value="class">Class</option><option value="subject">Subject</option><option value="week">Week</option></select></label>
-            <label>Filter<input id="reportFilter" placeholder="Type to filter"></label>
+        <section id="yearplans" class="view">
+          <div class="page-head"><div><div class="eyebrow blue-text">YEAR PLANS</div><h2>Upload & manage Year Plans</h2><p>Attach the official Year Plan and map it to the correct programme, class and subject.</p></div><button id="downloadPlanBackup" class="outline-btn">Export plan index</button></div>
+          <div class="panel">
+            <div class="panel-head"><div><div class="eyebrow">UPLOAD</div><h3>Add Year Plan</h3></div><span class="soft-badge">PDF · XLSX · XLS · CSV</span></div>
+            <div class="form-grid">
+              <label>Programme / Orientation<select id="ypProgram"><option>C Batch</option><option>Lead</option><option>Techno</option></select></label>
+              <label>Class & Section<select id="ypSection"></select></label>
+              <label>Department<select id="ypDepartment"></select></label>
+              <label>Subject<select id="ypSubject"></select></label>
+              <label>Handling Teacher<input id="ypTeacher" placeholder="Teacher name" /></label>
+              <label>Year Plan File<input id="ypFile" type="file" accept=".pdf,.xlsx,.xls,.csv" /></label>
+            </div>
+            <div class="row-actions"><p id="planStatus" class="status-text"></p><button id="savePlanBtn" class="primary">Upload Year Plan</button></div>
           </div>
-          <div id="reportSummary" class="report-summary"></div>
-          <div class="table-wrap"><table><thead><tr><th>Week</th><th>Class</th><th>Subject</th><th>Teacher</th><th>Planned</th><th>Actual</th><th>Lag</th><th>Status</th></tr></thead><tbody id="reportTable"></tbody></table></div>
-        </div>
-      </section>
+          <div class="panel">
+            <div class="panel-head"><div><div class="eyebrow">LIBRARY</div><h3>Uploaded Year Plans</h3></div><input id="planSearch" class="search-input" placeholder="Search class, subject, teacher or file" /></div>
+            <div id="planCards" class="plan-list"></div>
+          </div>
+        </section>
 
-      <section id="setup" class="view">
-        <div class="panel">
-          <div class="panel-head"><h2>Initial Setup</h2><span class="hint">Sections and academic structure</span></div>
-          <div id="setupGrid" class="setup-grid"></div>
-        </div>
-      </section>
-    </main>
+        <section id="weekly" class="view">
+          <div class="page-head"><div><div class="eyebrow blue-text">WEEKLY STATUS</div><h2>Syllabus progress entry</h2><p>Planned details come from the Year Plan; staff enter only the current teaching position and lag details.</p></div></div>
+          <div class="panel">
+            <div class="form-grid three">
+              <label>Week<select id="wkWeek"></select></label>
+              <label>Class & Section<select id="wkSection"></select></label>
+              <label>Subject<select id="wkSubject"></select></label>
+              <label>Teacher<input id="wkTeacher" placeholder="Handling teacher" /></label>
+              <label>Week Start<input id="wkStart" type="date" /></label>
+              <label>Week End<input id="wkEnd" type="date" /></label>
+              <label>Planned Working Days<input id="wkDays" type="number" min="0" max="7" /></label>
+              <label>Planned Periods<input id="wkPlannedPeriods" type="number" min="0" /></label>
+              <label>Periods Taken<input id="wkTakenPeriods" type="number" min="0" /></label>
+              <label class="full">Planned Topic / Activity<textarea id="wkPlanned" rows="3" placeholder="Auto-filled when matching Year Plan data is available"></textarea></label>
+              <label class="full">Topic currently taught<textarea id="wkActual" rows="3" placeholder="Enter the exact topic currently being taught"></textarea></label>
+              <label>Periods Lagging<input id="wkLagPeriods" type="number" min="0" /></label>
+              <label class="span-two">Reason for lag<input id="wkReason" placeholder="Reason, action required or expected recovery" /></label>
+            </div>
+            <div class="row-actions"><p id="weeklyStatus" class="status-text"></p><button id="saveWeeklyBtn" class="primary">Save Weekly Status</button></div>
+          </div>
+          <div class="panel"><div class="panel-head"><div><div class="eyebrow">RECENT RECORDS</div><h3>Saved weekly updates</h3></div><input id="weeklySearch" class="search-input" placeholder="Search records" /></div><div class="table-wrap"><table><thead><tr><th>Week</th><th>Class</th><th>Subject</th><th>Teacher</th><th>Planned</th><th>Taken</th><th>Lag</th><th>Status</th><th>Action</th></tr></thead><tbody id="weeklyTable"></tbody></table></div></div>
+        </section>
+
+        <section id="reports" class="view">
+          <div class="page-head"><div><div class="eyebrow blue-text">REPORTS</div><h2>Syllabus lagging reports</h2><p>Teacher-wise, class-wise, subject-wise and week-wise monitoring.</p></div><button id="exportCsvBtn" class="outline-btn">Export CSV</button></div>
+          <div class="panel">
+            <div class="report-toolbar"><label>View by<select id="reportMode"><option value="teacher">Teacher</option><option value="class">Class</option><option value="subject">Subject</option><option value="week">Week</option><option value="department">Department</option></select></label><label>Status<select id="reportStatus"><option value="all">All</option><option value="lagging">Lagging only</option><option value="ontrack">On track only</option></select></label><label class="grow">Search<input id="reportFilter" placeholder="Search report" /></label></div>
+            <div id="reportSummary" class="report-summary"></div>
+            <div class="table-wrap"><table><thead><tr><th>Week</th><th>Class</th><th>Department</th><th>Subject</th><th>Teacher</th><th>Planned Topic</th><th>Current Topic</th><th>Lag</th><th>Status</th></tr></thead><tbody id="reportTable"></tbody></table></div>
+          </div>
+        </section>
+
+        <section id="users" class="view">
+          <div class="page-head"><div><div class="eyebrow blue-text">USERS & ACCESS</div><h2>Staff roles and scope</h2><p>HODs see assigned departments; Teachers update only assigned class-subject combinations.</p></div><button id="addUserBtn" class="primary">+ Add user</button></div>
+          <div id="roleCards" class="role-grid"></div>
+          <div class="panel">
+            <div class="panel-head"><div><div class="eyebrow">ACCESS SCOPE</div><h3>Department, class and subject selection</h3><p class="small-muted">Select one or multiple. HOD reports follow selected departments; Teacher scope follows assigned class-subject combinations.</p></div><button id="clearScopeBtn" class="outline-btn">Clear</button></div>
+            <div class="scope-block"><div class="scope-title"><strong>Departments · select one or multiple</strong><button id="allDepartmentsBtn" class="mini-btn">All departments</button></div><div id="departmentCards" class="choice-grid three"></div></div>
+            <div class="scope-block"><div class="scope-title"><strong>Classes and sections · select one or multiple</strong><div><button class="mini-btn quick-section" data-program="C Batch">Add C Batch</button><button class="mini-btn quick-section" data-program="Techno">Add Techno</button><button class="mini-btn quick-section" data-program="Lead">Add Lead</button></div></div><div id="scopeSections" class="choice-grid four"></div></div>
+            <div class="scope-block"><div class="scope-title"><strong>Subjects · select one, multiple, or all</strong><button id="allSubjectsBtn" class="mini-btn">All subjects</button></div><div id="scopeSubjects" class="choice-grid four"></div></div>
+          </div>
+          <div class="panel"><div class="panel-head"><div><div class="eyebrow">USER LIST</div><h3>Staff accounts</h3></div></div><div id="userList" class="user-list"></div></div>
+        </section>
+
+        <section id="setup" class="view">
+          <div class="page-head"><div><div class="eyebrow blue-text">SETUP</div><h2>School master data</h2><p>Manage programmes, classes, departments, subjects, teachers and import reference data.</p></div><button id="backupBtn" class="outline-btn">Export Backup</button></div>
+          <div class="setup-grid">
+            <article class="master-card"><div><div class="eyebrow">PROGRAMME</div><div class="eyebrow spaced">ORIENTATIONS</div><h3>Orientation<br>master</h3></div><span id="orientationCount" class="count-bubble">3<br><small>active</small></span><div id="orientationRows" class="master-actions"></div></article>
+            <article class="master-card"><div><div class="eyebrow">ACADEMICS</div><div class="eyebrow spaced">CLASSES & SECTIONS</div><h3>Class<br>master</h3></div><span class="count-bubble">17<br><small>active</small></span><div id="classMasterRows" class="master-actions compact"></div></article>
+            <article class="master-card"><div><div class="eyebrow">ACADEMICS</div><div class="eyebrow spaced">DEPARTMENTS</div><h3>Department<br>master</h3></div><span id="departmentCount" class="count-bubble"></span><div id="departmentMasterRows" class="master-actions compact"></div></article>
+            <article class="master-card"><div><div class="eyebrow">STAFF</div><div class="eyebrow spaced">TEACHERS</div><h3>Teacher<br>master</h3></div><span id="teacherCount" class="count-bubble"></span><div class="empty-master">Use Users / mapping to add handling teachers.</div></article>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><div class="eyebrow">BULK IMPORT</div><h3>Classes, teachers, subjects & mapping</h3><p class="small-muted">Upload XLSX, XLS or CSV. Nothing is saved until the preview is accepted.</p></div></div>
+            <div class="bulk-row"><input id="bulkFile" type="file" accept=".xlsx,.xls,.csv" /><button id="previewBulkBtn" class="outline-btn">Preview file</button><button id="importBulkBtn" class="primary" disabled>Import Data</button></div>
+            <div id="bulkStatus" class="bulk-status"></div>
+          </div>
+          <div class="panel"><div class="panel-head"><div><div class="eyebrow">BACKUP</div><h3>Restore application data</h3></div></div><label class="restore-box">Choose JSON backup<input id="restoreInput" type="file" accept="application/json" /></label></div>
+        </section>
+      </main>
+    </div>
+
+    <nav class="mobile-nav" id="mobileNav">
+      <button class="active" data-view="dashboard"><span>D</span><small>Dashboard</small></button>
+      <button data-view="yearplans"><span>Y</span><small>Year Plans</small></button>
+      <button data-view="weekly"><span>W</span><small>Status</small></button>
+      <button data-view="reports"><span>R</span><small>Reports</small></button>
+      <button data-view="users"><span>U</span><small>Users</small></button>
+      <button data-view="setup"><span>S</span><small>Setup</small></button>
+    </nav>
   </div>
+
+  <dialog id="helpDialog" class="app-dialog"><div class="dialog-card"><div class="dialog-head"><div><div class="eyebrow">HELP</div><h3>Syllabus Tracker workflow</h3></div><button id="closeHelpBtn" class="icon-close">×</button></div><ol><li>Complete Setup masters and staff mappings.</li><li>Upload the correct Year Plan and verify class, programme and subject.</li><li>Open Weekly Status; select week, class and subject.</li><li>Enter current topic, periods taken, lagging periods and reason.</li><li>Use Reports for teacher/class/subject/week-wise follow-up.</li></ol><p class="small-muted">Year Plans should remain viewable and can be disabled when uploaded incorrectly instead of silently replacing records.</p></div></dialog>
+
+  <dialog id="userDialog" class="app-dialog"><form id="userForm" class="dialog-card"><div class="dialog-head"><div><div class="eyebrow">USER</div><h3>Add staff account</h3></div><button type="button" id="closeUserBtn" class="icon-close">×</button></div><div class="form-grid"><label>Name<input id="newUserName" required /></label><label>Username<input id="newUsername" required /></label><label>Role<select id="newUserRole"><option>Admin</option><option>HOD</option><option>Teacher</option></select></label><label>Department<select id="newUserDepartment"></select></label></div><p class="small-muted">Authentication is local in this reconstructed preview. Production deployment should connect these accounts to the shared backend.</p><div class="row-actions"><span></span><button class="primary" type="submit">Save user</button></div></form></dialog>
+
   <script src="app.js"></script>
 </body>
 </html>
