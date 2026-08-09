@@ -1,9 +1,9 @@
 (async()=>{
-  const files=["legacy-data.js","app-base-secure.js","app-plans.js","app-tracking.js","app-admin.js","app-finalize.js","app-security.js","app-remote.js"];
+  const files=["legacy-data.js","app-base-secure.js","app-plans.js","app-tracking.js","app-admin.js","app-finalize.js","app-remote.js"];
   for(const src of files){
     await new Promise((resolve,reject)=>{
       const s=document.createElement("script");
-      s.src=src+"?v=8";
+      s.src=src+"?v=9";
       s.onload=resolve;
       s.onerror=()=>reject(new Error("Failed to load "+src));
       document.head.appendChild(s);
