@@ -18,11 +18,11 @@ function ensureReportFilingStyles(){
     .weekly-paper-table{table-layout:fixed!important;width:100%!important}
     .weekly-paper-table thead{display:table-header-group!important}
     .weekly-paper-table tr{break-inside:avoid!important;page-break-inside:avoid!important}
-    .weekly-paper-table th{font-size:7pt!important;line-height:1.15!important;padding:1.35mm .75mm!important;font-weight:700!important;vertical-align:middle!important;white-space:normal!important;overflow-wrap:anywhere!important}
-    .weekly-paper-table td{font-size:6.8pt!important;line-height:1.22!important;padding:1.25mm .75mm!important;vertical-align:middle!important;white-space:normal!important;overflow-wrap:anywhere!important}
+    .weekly-paper-table th{font-size:7pt!important;line-height:1.15!important;padding:1.35mm .65mm!important;font-weight:700!important;vertical-align:middle!important;white-space:normal!important;overflow-wrap:anywhere!important}
+    .weekly-paper-table td{font-size:6.8pt!important;line-height:1.22!important;padding:1.25mm .65mm!important;vertical-align:middle!important;white-space:normal!important;overflow-wrap:anywhere!important}
     .weekly-paper-table td small{font-size:5.8pt!important;margin-top:.7mm!important}
-    .weekly-print-sheet.compact .weekly-paper-table th,.weekly-print-sheet.ultra .weekly-paper-table th{font-size:7pt!important;padding:1.35mm .75mm!important}
-    .weekly-print-sheet.compact .weekly-paper-table td,.weekly-print-sheet.ultra .weekly-paper-table td{font-size:6.8pt!important;padding:1.25mm .75mm!important}
+    .weekly-print-sheet.compact .weekly-paper-table th,.weekly-print-sheet.ultra .weekly-paper-table th{font-size:7pt!important;padding:1.35mm .65mm!important}
+    .weekly-print-sheet.compact .weekly-paper-table td,.weekly-print-sheet.ultra .weekly-paper-table td{font-size:6.8pt!important;padding:1.25mm .65mm!important}
     .weekly-print-sheet.ultra{padding:0!important}
   }
   `;
@@ -40,8 +40,8 @@ reportSheetHtml=function(rows){
     </table>
     <table class="weekly-paper-table">
       <colgroup>
-        <col style="width:4%"><col style="width:8%"><col style="width:7%"><col style="width:7%"><col style="width:7%">
-        <col style="width:19.5%"><col style="width:19.5%"><col style="width:8%"><col style="width:10%"><col style="width:10%">
+        <col style="width:3.5%"><col style="width:7.5%"><col style="width:6%"><col style="width:6.5%"><col style="width:6.5%">
+        <col style="width:22%"><col style="width:22%"><col style="width:7%"><col style="width:11%"><col style="width:8%">
       </colgroup>
       <thead><tr>
         <th>S.No</th><th>Class/Sec</th><th>Working days</th><th>Planned periods</th><th>Periods taken</th>
@@ -91,8 +91,19 @@ exportWeeklyReportExcel=function(){
     XLSX.utils.decode_range("A1:J1"),XLSX.utils.decode_range("A2:J2"),
     XLSX.utils.decode_range("A3:C3"),XLSX.utils.decode_range("D3:G3"),XLSX.utils.decode_range("H3:J3")
   ];
-  ws["!cols"]=[{wch:5.5},{wch:13},{wch:11},{wch:12},{wch:11},{wch:36},{wch:36},{wch:13},{wch:25},{wch:22}];
-  ws["!rows"]=[{hpt:26},{hpt:22},{hpt:24},{hpt:46},...rows.map(r=>({hpt:Math.max(24,Math.min(58,18+Math.ceil(Math.max(String(r.plannedTopic||"").length,String(r.currentTopic||"").length)/45)*8))}))];
+  ws["!cols"]=[
+    {wch:4.5},  // S.No
+    {wch:11},   // Class/Sec
+    {wch:8},    // Working days
+    {wch:9},    // Planned periods
+    {wch:9},    // Periods taken
+    {wch:42},   // Year plan topic
+    {wch:42},   // Current classroom topic
+    {wch:10},   // Lagging periods
+    {wch:24},   // Reason
+    {wch:18}    // Teacher/sign
+  ];
+  ws["!rows"]=[{hpt:26},{hpt:22},{hpt:24},{hpt:48},...rows.map(r=>({hpt:Math.max(24,Math.min(64,18+Math.ceil(Math.max(String(r.plannedTopic||"").length,String(r.currentTopic||"").length,String(r.reason||"").length)/44)*8))}))];
   ws["!margins"]={left:0.75,right:0.28,top:0.35,bottom:0.35,header:0.2,footer:0.2};
   ws["!pageSetup"]={orientation:"landscape",paperSize:9,fitToWidth:1,fitToHeight:0};
   ws["!sheetPr"]={pageSetUpPr:{fitToPage:true}};
@@ -117,4 +128,4 @@ exportWeeklyReportExcel=function(){
 };
 
 const _reportFilingInit=init;
-init=function(){ensureReportFilingStyles();_reportFilingInit();ensureReportFilingStyles()};
+init=function(){_reportFilingInit();ensureReportFilingStyles()};
