@@ -12,9 +12,9 @@ function ensureStyledExcelEngine(){
   });
   return KH_STYLED_XLSX_PROMISE
 }
-function excelThinBorder(){const edge={style:"thin",color:{rgb:"FF5F6368"}};return{top:edge,bottom:edge,left:edge,right:edge}}
+function excelThinBorder(){const edge={style:"thin",color:{rgb:"5F6368"}};return{top:edge,bottom:edge,left:edge,right:edge}}
 function excelStyle({bold=false,size=10,h="center",v="center",wrap=true,fill=null}={}){
-  const out={font:{name:"Arial",sz:size,bold,color:{rgb:"FF000000"}},alignment:{horizontal:h,vertical:v,wrapText:wrap},border:excelThinBorder()};
+  const out={font:{name:"Arial",sz:size,bold,color:{rgb:"000000"}},alignment:{horizontal:h,vertical:v,wrapText:wrap},border:excelThinBorder()};
   if(fill)out.fill={patternType:"solid",fgColor:{rgb:fill}};
   return out
 }
@@ -23,8 +23,9 @@ function ensureExcelCell(ws,r,c){
   if(!ws[a])ws[a]={t:"s",v:""};
   return ws[a]
 }
+function cloneExcelStyle(style){return JSON.parse(JSON.stringify(style))}
 function styleExcelBlock(ws,r1,c1,r2,c2,style){
-  for(let r=r1;r<=r2;r++)for(let c=c1;c<=c2;c++)ensureExcelCell(ws,r,c).s=JSON.parse(JSON.stringify(style))
+  for(let r=r1;r<=r2;r++)for(let c=c1;c<=c2;c++)ensureExcelCell(ws,r,c).s=cloneExcelStyle(style)
 }
 function styleMergedExcelBlock(ws,range,style){
   const rg=XLSX.utils.decode_range(range);
@@ -32,7 +33,7 @@ function styleMergedExcelBlock(ws,range,style){
 }
 function estimateExcelRowHeight(row){
   const longest=Math.max(String(row.plannedTopic||"").length,String(row.currentTopic||"").length,String(row.reason||"").length,String(row.teacher||"").length);
-  return Math.max(26,Math.min(76,24+Math.ceil(longest/48)*9))
+  return{hpt:Math.max(26,Math.min(76,24+Math.ceil(longest/48)*9))}
 }
 
 exportWeeklyReportExcel=async function(){
@@ -78,7 +79,7 @@ exportWeeklyReportExcel=async function(){
   const titleStyle=excelStyle({bold:true,size:14,h:"center",v:"center",wrap:true});
   const subtitleStyle=excelStyle({bold:true,size:11,h:"center",v:"center",wrap:true});
   const metaStyle=excelStyle({bold:true,size:10,h:"center",v:"center",wrap:true});
-  const headStyle=excelStyle({bold:true,size:9,h:"center",v:"center",wrap:true,fill:"FFE9EEF5"});
+  const headStyle=excelStyle({bold:true,size:9,h:"center",v:"center",wrap:true,fill:"E9EEF5"});
   const centerStyle=excelStyle({size:9,h:"center",v:"center",wrap:true});
   const leftStyle=excelStyle({size:9,h:"left",v:"center",wrap:true});
 
@@ -92,10 +93,10 @@ exportWeeklyReportExcel=async function(){
   const lastRow=sheetData.length-1;
   if(lastRow>=4){
     styleExcelBlock(ws,4,0,lastRow,9,centerStyle);
-    for(let r=4;r<=lastRow;r++)for(const c of [5,6,8])ensureExcelCell(ws,r,c).s=JSON.parse(JSON.stringify(leftStyle));
+    for(let r=4;r<=lastRow;r++)for(const c of [5,6,8])ensureExcelCell(ws,r,c).s=cloneExcelStyle(leftStyle);
   }
 
-  // Re-apply the outer/table border to every cell, including blank cells inside merged ranges.
+  // Keep borders on every used cell, including blank cells inside merged header ranges.
   for(let r=0;r<=lastRow;r++)for(let c=0;c<=9;c++){
     const cell=ensureExcelCell(ws,r,c);cell.s=cell.s||{};cell.s.border=excelThinBorder();cell.s.alignment=cell.s.alignment||{horizontal:"center",vertical:"center",wrapText:true}
   }
