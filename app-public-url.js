@@ -1,4 +1,4 @@
-const PUBLIC_APP_URL="https://githubraw.com/umakanthjopwer-beep/syllabus/main/index.html";
+const PUBLIC_APP_URL="https://syllabuslagging.umakanth-jopwer.workers.dev";
 appLink=function(){return PUBLIC_APP_URL};
 
 if("serviceWorker" in navigator){
