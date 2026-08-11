@@ -8,16 +8,16 @@
   function auditRows(){
     const out=[];
     for(const m of data.setup?.handlingMappings||[]){
-      if(!m.activeForSyllabus)continue;const x=planRowsFor(m.section,m.subject),rows=x.rows||[],cur=currentRows(rows),blank=rows.filter(r=>!String(r.topic||"").trim()).length;
+      if(!m.activeForSyllabus)continue;const x=planRowsFor(m.section,m.subject),grade=Number(sectionMeta(m.section).grade),attached=(data.plans||[]).filter(p=>p.enabled!==false&&p.assignedSections?.includes(m.section)&&planHasSubject(p,m.subject)),plan=x.plan||attached[0]||null,rows=x.plan?(x.rows||[]):((plan?.weeks||[]).filter(w=>(w.grade==null||Number(w.grade)===grade)&&same(canonicalSubject(w.subject||plan.subject),m.subject))),cur=currentRows(rows),blank=rows.filter(r=>!String(r.topic||"").trim()).length;
       let status="OK",kind="ok";
-      if(!x.plan){status=OPTIONAL_NO_PLAN.has(m.subject)?"NO SEPARATE YEAR PLAN":"YEAR PLAN MISSING";kind=OPTIONAL_NO_PLAN.has(m.subject)?"optional":"bad"}
+      if(!plan){status=OPTIONAL_NO_PLAN.has(m.subject)?"NO SEPARATE YEAR PLAN":"YEAR PLAN MISSING";kind=OPTIONAL_NO_PLAN.has(m.subject)?"optional":"bad"}
       else if(!rows.length){status="NO WEEK DATA";kind="bad"}
-      else if(String(x.plan.parseStatus||"").toLowerCase()==="partial"){status="PARTIAL CAPTURE";kind="bad"}
+      else if(String(plan.parseStatus||"").toLowerCase()==="partial"){status="PARTIAL CAPTURE";kind="bad"}
       else if(maxDate(rows)<today()){status="COVERAGE ENDS EARLY";kind="bad"}
       else if(!cur.length){status="CURRENT WEEK MISSING";kind="warn"}
       else if(cur.some(r=>!String(r.topic||"").trim())){status="CURRENT SYLLABUS BLANK";kind="bad"}
       else if(blank){status=`${blank} BLANK ROW(S)`;kind="warn"}
-      out.push({...m,plan:x.plan,rows,start:minDate(rows),end:maxDate(rows),blank,status,kind})
+      out.push({...m,plan,rows,start:minDate(rows),end:maxDate(rows),blank,status,kind})
     }
     return out
   }
