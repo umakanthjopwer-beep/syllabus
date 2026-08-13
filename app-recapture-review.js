@@ -1,44 +1,18 @@
 (function(){
-  function statusText(status){
-    const s=String(status||"").trim().toUpperCase();
-    if(s.includes("PARTIAL CAPTURE"))return "Only part of the dated Year Plan was captured. Review the stored source and use Re-capture to restore only missing or incomplete capture data.";
-    if(s.includes("COVERAGE ENDS EARLY"))return "Captured coverage ends early. Re-capture will check the stored source for later dated rows.";
-    if(s.includes("BLANK ROW"))return "One or more captured rows have no topic. Re-capture can fill a blank only when usable content is available from the stored Year Plan source.";
-    if(s.includes("CURRENT WEEK MISSING"))return "The current week is not represented by a captured dated row. Review the Year Plan source for the missing week.";
-    if(s.includes("CURRENT SYLLABUS BLANK"))return "The current captured week exists but its syllabus topic is blank. Re-capture can fill it from the stored source when available.";
-    if(s.includes("YEAR PLAN MISSING"))return "No Year Plan is linked to this active class-subject mapping. Upload or assign the correct source plan.";
-    if(s.includes("NO WEEK DATA"))return "A Year Plan is linked, but no usable dated rows are available. Review or re-capture the stored source.";
-    return "Review this capture warning before making a correction."
-  }
-  function makeIssueDetails(tr){
-    const status=String(tr.cells[6].textContent||"").trim();
-    const d=document.createElement("details");d.className="capture-issue-details";
-    const s=document.createElement("summary");s.textContent="View Issue";
-    const p=document.createElement("div");p.className="capture-issue-note";p.textContent=status+" — "+statusText(status)+" Existing non-blank Year Plan rows are preserved during source Re-capture.";
-    d.appendChild(s);d.appendChild(p);return d
-  }
-  function makeAllDetails(panel){
-    if(panel.querySelector("#captureReviewAll"))return;
-    const rows=[...panel.querySelectorAll("#auditTable tr")].filter(function(tr){return tr.cells.length>=8});
-    const issues=rows.filter(function(tr){const s=String(tr.cells[6].textContent||"").trim();return s&&s!=="OK"&&s!=="NO SEPARATE YEAR PLAN"});
-    const d=document.createElement("details");d.id="captureReviewAll";d.className="capture-review-all";
-    const s=document.createElement("summary");s.textContent="Smart Check All Capture Issues ("+issues.length+")";
-    const box=document.createElement("div");box.className="capture-review-list";
-    if(!issues.length){box.textContent="No capture issues are currently listed."}
-    else issues.slice(0,40).forEach(function(tr){const item=document.createElement("div");const section=String(tr.cells[0].textContent||"").trim(),subject=String(tr.cells[1].textContent||"").trim(),status=String(tr.cells[6].textContent||"").trim();item.textContent=section+" · "+subject+" · "+status+" — "+statusText(status);box.appendChild(item)});
-    d.appendChild(s);d.appendChild(box);
-    const head=panel.querySelector(".panel-head .smart-actions")||panel.querySelector(".panel-head");if(head)head.prepend(d)
-  }
-  function enhance(){
-    const panel=document.getElementById("dataIntegrityAudit");if(!panel)return;
-    panel.querySelectorAll("#auditTable tr").forEach(function(tr){
-      if(tr.dataset.reviewReady==="1"||tr.cells.length<8)return;tr.dataset.reviewReady="1";
-      const status=String(tr.cells[6].textContent||"").trim();if(status==="OK"||status==="NO SEPARATE YEAR PLAN")return;
-      tr.cells[7].appendChild(makeIssueDetails(tr));
-    });
-    makeAllDetails(panel)
-  }
-  const style=document.createElement("style");style.textContent=".capture-issue-details{margin-top:5px;font-size:9px}.capture-issue-details summary,.capture-review-all summary{cursor:pointer;color:#28568f;font-weight:800}.capture-issue-note{max-width:360px;padding:8px;margin-top:5px;border:1px solid #ead79e;background:#fff8e8;border-radius:8px;line-height:1.45}.capture-review-all{font-size:9px}.capture-review-list{position:absolute;right:20px;z-index:20;width:min(620px,80vw);max-height:330px;overflow:auto;padding:10px;background:#fff;border:1px solid #dce5ef;border-radius:10px;box-shadow:0 10px 30px #0002}.capture-review-list div{padding:7px;border-bottom:1px solid #eef2f6}.capture-review-list div:last-child{border-bottom:0}";document.head.appendChild(style);
-  const observer=new MutationObserver(enhance);observer.observe(document.body,{childList:true,subtree:true});
-  setTimeout(enhance,0);
+  const clean=v=>String(v??"").replace(/\s+/g," ").trim();
+  function statusText(status){const s=clean(status).toUpperCase();if(s.includes("PARTIAL CAPTURE"))return"Only part of the Year Plan was captured. Re-capture will safely restore missing dated rows.";if(s.includes("COVERAGE ENDS EARLY"))return"Captured coverage ends before the source Year Plan ends.";if(s.includes("BLANK ROW"))return"One or more teaching-week rows have no topic. Re-capture will fill them only when source content is available.";if(s.includes("CURRENT WEEK MISSING"))return"The current Monday-Saturday week is not represented by a captured row.";if(s.includes("CURRENT SYLLABUS BLANK"))return"The current captured week exists but the syllabus topic is blank.";if(s.includes("YEAR PLAN MISSING"))return"No Year Plan is linked to this active class-subject mapping.";if(s.includes("NO WEEK DATA"))return"The Year Plan is linked, but no usable week rows are captured.";return"Review this Year Plan capture warning."}
+  function enhance(){const panel=document.getElementById("dataIntegrityAudit");if(!panel)return;panel.querySelectorAll("#auditTable tr").forEach(tr=>{if(tr.dataset.reviewReady==="1"||tr.cells.length<8)return;tr.dataset.reviewReady="1";const status=clean(tr.cells[6].textContent);if(status==="OK"||status==="NO SEPARATE YEAR PLAN")return;const d=document.createElement("details"),s=document.createElement("summary"),p=document.createElement("div");d.className="capture-issue-details";s.textContent="View Issue";p.className="capture-issue-note";p.textContent=status+" — "+statusText(status)+" Existing non-blank Year Plan data is preserved during Re-capture.";d.append(s,p);tr.cells[7].appendChild(d)})}
+  const style=document.createElement("style");style.textContent=".capture-issue-details{margin-top:5px;font-size:9px}.capture-issue-details summary{cursor:pointer;color:#28568f;font-weight:800}.capture-issue-note{max-width:360px;padding:8px;margin-top:5px;border:1px solid #ead79e;background:#fff8e8;border-radius:8px;line-height:1.45}";document.head.appendChild(style);new MutationObserver(enhance).observe(document.body,{childList:true,subtree:true});setTimeout(enhance,0);
+
+  // Final capture repair layer: fixes false date-token warnings and multi-subject Excel plans.
+  const baseParse=smartParse;
+  const isoDates=v=>{const z=String(v||"").replaceAll("–","-").replaceAll("—","-").replaceAll(".","-").replaceAll("/","-"),a=[];for(const m of z.matchAll(/\b(\d{1,2})-(\d{1,2})-(20\d{2})\b/g))a.push(`${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`);for(const m of z.matchAll(/\b(20\d{2})-(\d{1,2})-(\d{1,2})\b/g))a.push(`${m[1]}-${m[2].padStart(2,"0")}-${m[3].padStart(2,"0")}`);return[...new Set(a)].filter(x=>x>="2026-06-01"&&x<="2027-04-30")};
+  const headerSubject=v=>{const z=clean(v).toLowerCase();if(/reasoning/.test(z))return"Reasoning";if(/arithmetic/.test(z))return"Arithmetic";if(/vedic/.test(z))return"Vedic Maths";if(/track\s*[-–]?\s*a/.test(z))return"Track A";if(/track\s*[-–]?\s*b/.test(z))return"Track B";return""};
+  function monday(s){const d=new Date(s+"T00:00:00Z"),n=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-n);return d.toISOString().slice(0,10)}
+  function add(s,n){const d=new Date(s+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
+  function weekLabel(s){const w=calendarWeekForDate(s);return w.label}
+  function normalizeRows(rows){const map=new Map();for(const r of rows){if(!r.startDate)continue;const start=monday(r.startDate),end=add(start,5),subject=canonicalSubject(r.subject||""),key=[r.grade??"",subject,start].join("|");if(!map.has(key))map.set(key,{grade:r.grade??null,subject,startDate:start,endDate:end,workingDays:r.workingDays??null,plannedPeriods:r.plannedPeriods??null,topic:"",weekNo:calendarWeekForDate(start).weekNo,academicWeekNo:calendarWeekForDate(start).weekNo,weekLabel:weekLabel(start),week:weekLabel(start)});const x=map.get(key),t=clean(r.topic);if(t&&!x.topic.split(" | ").includes(t))x.topic=x.topic?x.topic+" | "+t:t;if(x.workingDays==null&&r.workingDays!=null)x.workingDays=r.workingDays;if(x.plannedPeriods==null&&r.plannedPeriods!=null)x.plannedPeriods=r.plannedPeriods}return[...map.values()].sort((a,b)=>a.startDate.localeCompare(b.startDate)||Number(a.grade||0)-Number(b.grade||0)||a.subject.localeCompare(b.subject))}
+  function excelFallback(wb,fileName){const out=[];for(const sn of wb.SheetNames){const m=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:"",raw:false});if(!m.length)continue;const top=m.slice(0,25).flat().join(" "),grade=detectGrades(top+" "+sn+" "+fileName)[0]||null;let hr=-1,dc=-1;for(let r=0;r<Math.min(50,m.length)&&hr<0;r++)for(let c=0;c<(m[r]||[]).length;c++)if(/\bdate\b/i.test(clean(m[r][c]))){hr=r;dc=c;break}if(hr<0)for(let r=0;r<Math.min(50,m.length)&&hr<0;r++)for(let c=0;c<(m[r]||[]).length;c++)if(isoDates(m[r][c]).length){hr=Math.max(0,r-1);dc=c;break}if(hr<0)continue;const width=Math.max(...m.slice(Math.max(0,hr-3),Math.min(m.length,hr+4)).map(r=>r.length),0),head=c=>{const a=[];for(let r=Math.max(0,hr-3);r<=Math.min(m.length-1,hr+2);r++){const v=clean(m[r]?.[c]);if(v&&!a.includes(v))a.push(v)}return a.join(" ")},subs=[];let days=-1,periods=-1,topic=-1;for(let c=0;c<width;c++){const h=head(c),s=headerSubject(h);if(s)subs.push([c,s]);if(days<0&&/working.*days|no.*days/i.test(h))days=c;if(periods<0&&/period/i.test(h))periods=c;if(topic<0&&/topic|content|syllabus|lesson/i.test(h))topic=c}const detected=detectSubjects(top,fileName),sheetSubject=headerSubject(sn+" "+top)||detected[0]||"";for(let r=hr+1;r<m.length;r++){const row=m[r]||[],ds=isoDates([row[dc],row[dc+1],row[dc+2]].map(clean).join(" "));if(!ds.length)continue;const start=ds[0],end=ds[1]||start,num=c=>c>=0?(Number(clean(row[c]).match(/\d+/)?.[0]||0)||null):null;if(subs.length){for(const[c,s]of subs)out.push({grade,subject:s,startDate:start,endDate:end,workingDays:num(days),plannedPeriods:num(periods),topic:clean(row[c])})}else if(topic>=0||sheetSubject)out.push({grade,subject:sheetSubject,startDate:start,endDate:end,workingDays:num(days),plannedPeriods:num(periods),topic:topic>=0?clean(row[topic]):""})}}return out}
+  function coverage(d){const src=isoDates(d.text||""),rows=d.rows||[],sourceEnd=src.reduce((m,x)=>x>m?x:m,""),captureEnd=rows.reduce((m,r)=>{const x=r.endDate||r.startDate||"";return x>m?x:m},""),blank=rows.filter(r=>!clean(r.topic)&&Number(r.workingDays||0)>0).length;let incomplete=false,warn="";if(src.length&&!rows.length){incomplete=true;warn="Dated syllabus content is present in the source, but no usable week rows were captured."}else if(sourceEnd&&captureEnd&&((new Date(sourceEnd)-new Date(captureEnd))/86400000)>10){incomplete=true;warn=`Source Year Plan continues to ${sourceEnd}, but captured syllabus ends at ${captureEnd}.`}d.captureIncomplete=incomplete;d.captureWarnings=[];if(warn)d.captureWarnings.push(warn);if(blank)d.captureWarnings.push(`${blank} teaching-week row(s) still have no syllabus topic.`);d.captureWarning=d.captureWarnings.join(" ");return d}
+  smartParse=async function(file){let d=await baseParse(file),ext=file.name.split(".").pop().toLowerCase();if(["xlsx","xls","csv"].includes(ext)&&window.XLSX&&(!(d.rows||[]).length||d.captureIncomplete)){try{const wb=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:true}),raw=excelFallback(wb,file.name);if(raw.length){d.rawRows=raw;d.rows=normalizeRows(raw)}}catch(e){console.warn("Excel fallback capture",e)}}return coverage(d)};
 })();
