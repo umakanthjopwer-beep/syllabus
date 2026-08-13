@@ -1,9 +1,9 @@
 (async()=>{
-  const files=["legacy-data.js","app-base-secure.js","app-plans.js","app-tracking.js","app-admin.js","app-finalize.js","app-remote.js","app-smart-plans.js","app-pdf-plan-parser.js","app-yearplan-recapture-v2.js","app-plan-fixes.js","app-old-plan-migration.js","app-weekly-source-lock.js","app-yearplan-integrity-fix.js","app-teacher-scope.js","app-hod-viewonly.js","app-report-print.js","app-login-clean.js","app-public-url.js","app-session-report-fix.js","app-weekly-entry-control.js","app-weekly-edit-rules.js","app-report-filing-layout.js","app-report-top-punch.js","app-excel-export-style.js","app-user-password-admin.js","app-superadmin-impersonate.js","app-data-integrity-audit.js","app-recapture-review.js","app-week-calendar-v2.js","app-yearplan-week-engine.js"];
+  const files=["legacy-data.js","app-base-secure.js","app-plans.js","app-tracking.js","app-admin.js","app-finalize.js","app-remote.js","app-smart-plans.js","app-pdf-plan-parser.js","app-yearplan-recapture-v2.js","app-plan-fixes.js","app-old-plan-migration.js","app-weekly-source-lock.js","app-yearplan-integrity-fix.js","app-teacher-scope.js","app-hod-viewonly.js","app-report-print.js","app-login-clean.js","app-public-url.js","app-session-report-fix.js","app-weekly-entry-control.js","app-weekly-edit-rules.js","app-report-filing-layout.js","app-report-top-punch.js","app-excel-export-style.js","app-user-password-admin.js","app-superadmin-impersonate.js","app-data-integrity-audit.js","app-week-calendar-v2.js","app-yearplan-week-engine.js","app-recapture-review.js"];
   for(const src of files){
     await new Promise((resolve,reject)=>{
       const s=document.createElement("script");
-      s.src=src+"?v=34";
+      s.src=src+"?v=35";
       s.onload=resolve;
       s.onerror=()=>reject(new Error("Failed to load "+src));
       document.head.appendChild(s);
