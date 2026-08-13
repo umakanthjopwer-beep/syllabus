@@ -19,5 +19,14 @@ function pdfPageTableRows(items,pageText){
 const _smartParseBase=smartParse;
 smartParse=async function(file){
   const ext=file.name.split(".").pop().toLowerCase();if(ext!=="pdf")return _smartParseBase(file);
-  const pdfjs=await loadPdfJs(),pdf=await pdfjs.getDocument({data:await file.arrayBuffer()}).promise;let text="",rows=[];for(let i=1;i<=pdf.numPages;i++){const pg=await pdf.getPage(i),tc=await pg.getTextContent(),items=tc.items.map(x=>({str:x.str,x:x.transform[4],y:x.transform[5]})),pageText=items.map(x=>x.str).join(" ");text+=pageText+"\n";rows.push(...pdfPageTableRows(items,pageText))}return smartDetection(file,text,pdf.numPages,rows)
+  const pdfjs=await loadPdfJs(),pdf=await pdfjs.getDocument({data:await file.arrayBuffer()}).promise;let text="",rows=[],gradeContext="",subjectContext="";
+  for(let i=1;i<=pdf.numPages;i++){
+    const pg=await pdf.getPage(i),tc=await pg.getTextContent(),items=tc.items.map(x=>({str:x.str,x:x.transform[4],y:x.transform[5]})),pageText=items.map(x=>x.str).join(" ");
+    const pageGrades=detectGrades(pageText,file.name),pageSubjects=detectSubjects(pageText,file.name);
+    if(pageGrades.length)gradeContext=pageText;
+    if(pageSubjects.length)subjectContext=pageText;
+    const parseText=[pageText,gradeContext,subjectContext].filter(Boolean).join(" ");
+    text+=pageText+"\n";rows.push(...pdfPageTableRows(items,parseText))
+  }
+  return smartDetection(file,text,pdf.numPages,rows)
 };
