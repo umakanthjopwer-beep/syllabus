@@ -1,1 +1,0 @@
-Safe recapture implementation notes.
