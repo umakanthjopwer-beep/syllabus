@@ -18,59 +18,42 @@ function excelStyle({bold=false,size=10,h="center",v="center",wrap=true,fill=nul
   if(fill)out.fill={patternType:"solid",fgColor:{rgb:fill}};
   return out
 }
-function ensureExcelCell(ws,r,c){
-  const a=XLSX.utils.encode_cell({r,c});
-  if(!ws[a])ws[a]={t:"s",v:""};
-  return ws[a]
-}
+function ensureExcelCell(ws,r,c){const a=XLSX.utils.encode_cell({r,c});if(!ws[a])ws[a]={t:"s",v:""};return ws[a]}
 function cloneExcelStyle(style){return JSON.parse(JSON.stringify(style))}
-function styleExcelBlock(ws,r1,c1,r2,c2,style){
-  for(let r=r1;r<=r2;r++)for(let c=c1;c<=c2;c++)ensureExcelCell(ws,r,c).s=cloneExcelStyle(style)
-}
-function styleMergedExcelBlock(ws,range,style){
-  const rg=XLSX.utils.decode_range(range);
-  styleExcelBlock(ws,rg.s.r,rg.s.c,rg.e.r,rg.e.c,style)
-}
-function estimateExcelRowHeight(row){
-  const longest=Math.max(String(row.plannedTopic||"").length,String(row.currentTopic||"").length,String(row.reason||"").length,String(row.teacher||"").length);
-  return{hpt:Math.max(26,Math.min(76,24+Math.ceil(longest/48)*9))}
+function styleExcelBlock(ws,r1,c1,r2,c2,style){for(let r=r1;r<=r2;r++)for(let c=c1;c<=c2;c++)ensureExcelCell(ws,r,c).s=cloneExcelStyle(style)}
+function styleMergedExcelBlock(ws,range,style){const rg=XLSX.utils.decode_range(range);styleExcelBlock(ws,rg.s.r,rg.s.c,rg.e.r,rg.e.c,style)}
+function estimateExcelRowHeight(row){const longest=Math.max(String(row.plannedTopic||"").length,String(row.currentTopic||"").length,String(row.reason||"").length,String(row.teacher||"").length);return{hpt:Math.max(30,Math.min(82,28+Math.ceil(longest/48)*9))}}
+function excelSubmittedAt(r){
+  if(!r?.submitted)return"Pending";
+  if(!r.savedAt)return"Submitted";
+  const d=new Date(r.savedAt);if(Number.isNaN(d.getTime()))return"Submitted";
+  return `Submitted: ${d.toLocaleString("en-IN",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:true})}`
 }
 
 exportWeeklyReportExcel=async function(){
   const rows=REPORT_STATE.rows||reportFilteredRows();
-  let XL;
-  try{XL=await ensureStyledExcelEngine()}catch(e){alert(e.message||String(e));return}
-  const subject=`Subject: ${REPORT_STATE.subject||REPORT_ALL_SUBJECTS}`;
+  let XL;try{XL=await ensureStyledExcelEngine()}catch(e){alert(e.message||String(e));return}
+  const selectedSubject=document.getElementById("printReportSubject")?.value||REPORT_STATE.subject||REPORT_ALL_SUBJECTS;
+  const allSubjects=selectedSubject===REPORT_ALL_SUBJECTS;
+  const subject=`Subject: ${selectedSubject}`;
   const week=`Week dates: ${reportWeekLabel(REPORT_STATE.weekStart,REPORT_STATE.weekEnd)}`;
   const date=`Date: ${reportDateNumeric()}`;
   const sheetData=[
     ["Sri Chaitanya School: Khalsa CBSE Branch","","","","","","","","",""],
     ["Weekly syllabus status","","","","","","","","",""],
     [subject,"","",week,"","","",date,"",""],
-    ["S.No","Class/Sec","Working days","Planned periods","Periods taken","Write the topic in the year plan as of today.","The topic currently being taught in the classroom","No. of lagging periods","Reason for lagging","Sign of Teacher"]
+    ["S.No","Class/Sec","Working days","Planned periods","Periods taken","Write the topic in the year plan as of today.","The topic currently being taught in the classroom","No. of lagging periods","Reason for lagging","Sign of Teacher / Submitted"]
   ];
   rows.forEach((r,i)=>sheetData.push([
     i+1,
-    `${r.section}${r.batch?" - "+r.batch:""}`,
-    r.workingDays??"",
-    r.plannedPeriods??"",
-    r.periodsTaken??"",
-    r.plannedTopic||"",
-    r.currentTopic||"",
-    r.lagPeriods??"",
-    r.reason||"",
-    `${r.teacher||""}${r.teacher?" - ":""}${r.submitted?"Digitally submitted":"Pending"}`
+    `${r.section}${allSubjects?`\n${r.subject||""}`:(r.batch?`\n${r.batch}`:"")}`,
+    r.workingDays??"",r.plannedPeriods??"",r.periodsTaken??"",r.plannedTopic||"",r.currentTopic||"",r.lagPeriods??"",r.reason||"",
+    `${r.teacher||""}${r.teacher?"\n":""}${excelSubmittedAt(r)}`
   ]));
 
   const ws=XL.utils.aoa_to_sheet(sheetData);
-  ws["!merges"]=[
-    XL.utils.decode_range("A1:J1"),XL.utils.decode_range("A2:J2"),
-    XL.utils.decode_range("A3:C3"),XL.utils.decode_range("D3:G3"),XL.utils.decode_range("H3:J3")
-  ];
-  ws["!cols"]=[
-    {wch:4.5},{wch:11},{wch:8},{wch:9},{wch:9},
-    {wch:42},{wch:42},{wch:10},{wch:24},{wch:18}
-  ];
+  ws["!merges"]=[XL.utils.decode_range("A1:J1"),XL.utils.decode_range("A2:J2"),XL.utils.decode_range("A3:C3"),XL.utils.decode_range("D3:G3"),XL.utils.decode_range("H3:J3")];
+  ws["!cols"]=[{wch:4.5},{wch:14},{wch:8},{wch:9},{wch:9},{wch:42},{wch:42},{wch:10},{wch:24},{wch:24}];
   ws["!rows"]=[{hpt:28},{hpt:23},{hpt:28},{hpt:52},...rows.map(estimateExcelRowHeight)];
   ws["!margins"]={left:0.28,right:0.28,top:0.75,bottom:0.35,header:0.2,footer:0.2};
   ws["!pageSetup"]={orientation:"landscape",paperSize:9,fitToWidth:1,fitToHeight:0};
@@ -83,23 +66,10 @@ exportWeeklyReportExcel=async function(){
   const centerStyle=excelStyle({size:9,h:"center",v:"center",wrap:true});
   const leftStyle=excelStyle({size:9,h:"left",v:"center",wrap:true});
 
-  styleMergedExcelBlock(ws,"A1:J1",titleStyle);
-  styleMergedExcelBlock(ws,"A2:J2",subtitleStyle);
-  styleMergedExcelBlock(ws,"A3:C3",metaStyle);
-  styleMergedExcelBlock(ws,"D3:G3",metaStyle);
-  styleMergedExcelBlock(ws,"H3:J3",metaStyle);
-  styleExcelBlock(ws,3,0,3,9,headStyle);
-
+  styleMergedExcelBlock(ws,"A1:J1",titleStyle);styleMergedExcelBlock(ws,"A2:J2",subtitleStyle);styleMergedExcelBlock(ws,"A3:C3",metaStyle);styleMergedExcelBlock(ws,"D3:G3",metaStyle);styleMergedExcelBlock(ws,"H3:J3",metaStyle);styleExcelBlock(ws,3,0,3,9,headStyle);
   const lastRow=sheetData.length-1;
-  if(lastRow>=4){
-    styleExcelBlock(ws,4,0,lastRow,9,centerStyle);
-    for(let r=4;r<=lastRow;r++)for(const c of [5,6,8])ensureExcelCell(ws,r,c).s=cloneExcelStyle(leftStyle);
-  }
-
-  // Keep borders on every used cell, including blank cells inside merged header ranges.
-  for(let r=0;r<=lastRow;r++)for(let c=0;c<=9;c++){
-    const cell=ensureExcelCell(ws,r,c);cell.s=cell.s||{};cell.s.border=excelThinBorder();cell.s.alignment=cell.s.alignment||{horizontal:"center",vertical:"center",wrapText:true}
-  }
+  if(lastRow>=4){styleExcelBlock(ws,4,0,lastRow,9,centerStyle);for(let r=4;r<=lastRow;r++)for(const c of [5,6,8])ensureExcelCell(ws,r,c).s=cloneExcelStyle(leftStyle)}
+  for(let r=0;r<=lastRow;r++)for(let c=0;c<=9;c++){const cell=ensureExcelCell(ws,r,c);cell.s=cell.s||{};cell.s.border=excelThinBorder();cell.s.alignment=cell.s.alignment||{horizontal:"center",vertical:"center",wrapText:true}}
 
   const wb=XL.utils.book_new();XL.utils.book_append_sheet(wb,ws,"Weekly Status");
   wb.Workbook=wb.Workbook||{};wb.Workbook.Names=wb.Workbook.Names||[];
