@@ -1,8 +1,8 @@
 // True A4 landscape weekly report printing.
 // Uses the full A4 sheet with readable text and content-aware pagination.
 (function(){
-  const MAX_ROWS_PER_PAGE=11;
-  const BODY_BUDGET_MM=145;
+  const MAX_ROWS_PER_PAGE=14;
+  const BODY_BUDGET_MM=168;
 
   function isAllSubjects(){
     const live=document.getElementById("printReportSubject")?.value;
@@ -26,19 +26,19 @@
     return Math.max(1,Math.ceil(s.length/charsPerLine))
   }
   function estimatedRowMm(r){
-    const topicLines=Math.max(
-      lineCount(r.plannedTopic,58),
-      lineCount(r.currentTopic,58),
-      lineCount(r.reason,34),
-      lineCount(r.teacher,20),
+    const lines=Math.max(
+      lineCount(r.plannedTopic,48),
+      lineCount(r.currentTopic,48),
+      lineCount(r.reason,30),
+      lineCount(r.teacher,18),
       isAllSubjects()?lineCount(r.subject,18):1
     );
-    return 8.5+Math.max(0,topicLines-1)*3.2
+    return 6.6+Math.max(0,lines-1)*2.8
   }
   function paginate(rows){
     const pages=[];let page=[],used=0;
     for(const r of rows||[]){
-      const h=Math.min(28,estimatedRowMm(r));
+      const h=Math.min(25,estimatedRowMm(r));
       if(page.length&&(page.length>=MAX_ROWS_PER_PAGE||used+h>BODY_BUDGET_MM)){
         pages.push(page);page=[];used=0
       }
@@ -56,7 +56,7 @@
       <table class="weekly-meta-table"><tr>
         <td><b>Subject:</b> ${reportEsc(subject)}</td>
         <td><b>Week dates:</b> ${reportEsc(week)}</td>
-        <td><b>Date:</b> ${today}<br><b>Page:</b> ${page} of ${totalPages}</td>
+        <td><div class="report-date-page"><span><b>Date:</b> ${today}</span><span class="report-page-number"><b>Page:</b> ${page} of ${totalPages}</span></div></td>
       </tr></table>
       <table class="weekly-paper-table readable-report-table"><thead><tr>
         <th>S.No</th><th>Class/Sec</th><th>Working days</th><th>Planned periods</th><th>Periods taken</th>
@@ -84,13 +84,15 @@
     const s=document.createElement("style");s.id="readableReportPrintStyles";s.textContent=`
       .readable-report-pages{display:grid;gap:22px;justify-items:center}
       .readable-report-page{box-sizing:border-box!important;margin:0!important}
+      .report-date-page{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:24px!important;white-space:nowrap!important}
+      .report-page-number{margin-left:auto!important;text-align:right!important}
       .report-class-subject-cell{text-align:center!important}.report-row-class{display:block;font-weight:800}.report-row-subject{display:block!important;margin-top:4px!important;font-size:8px!important;line-height:1.2!important;font-weight:800!important;color:#234f86!important}
       .readable-report-table th:nth-child(1){width:3.5%!important}.readable-report-table th:nth-child(2){width:8%!important}.readable-report-table th:nth-child(3){width:6%!important}.readable-report-table th:nth-child(4){width:6%!important}.readable-report-table th:nth-child(5){width:6%!important}.readable-report-table th:nth-child(6){width:20.5%!important}.readable-report-table th:nth-child(7){width:20.5%!important}.readable-report-table th:nth-child(8){width:6%!important}.readable-report-table th:nth-child(9){width:12.5%!important}.readable-report-table th:nth-child(10){width:10.5%!important}
       @media screen{
         .readable-report-page{
           width:1120px!important;max-width:none!important;min-width:1120px!important;
           aspect-ratio:297 / 210!important;min-height:792px!important;
-          padding:26px 18px 28px!important;background:#fff!important;border:1px solid #cfd5dc!important;box-shadow:0 5px 18px rgba(0,0,0,.08)!important;
+          padding:22px 18px 22px!important;background:#fff!important;border:1px solid #cfd5dc!important;box-shadow:0 5px 18px rgba(0,0,0,.08)!important;
           overflow:hidden!important;
         }
       }
@@ -109,16 +111,17 @@
           break-after:page!important;page-break-after:always!important;
         }
         #weeklyReportPreview .readable-report-page:last-child{break-after:auto!important;page-break-after:auto!important}
-        #weeklyReportPreview .weekly-paper-title{font-size:14pt!important;margin:0 0 1mm!important;line-height:1.1!important}
-        #weeklyReportPreview .weekly-paper-subtitle{font-size:9pt!important;margin:0 0 2mm!important;line-height:1.1!important}
+        #weeklyReportPreview .weekly-paper-title{font-size:14pt!important;margin:0 0 .8mm!important;line-height:1.08!important}
+        #weeklyReportPreview .weekly-paper-subtitle{font-size:9pt!important;margin:0 0 1.5mm!important;line-height:1.08!important}
         #weeklyReportPreview .weekly-meta-table{margin:0!important;width:100%!important;table-layout:fixed!important}
-        #weeklyReportPreview .weekly-meta-table td{font-size:8pt!important;padding:1.4mm 1.7mm!important;line-height:1.18!important}
+        #weeklyReportPreview .weekly-meta-table td{font-size:8pt!important;padding:1.15mm 1.5mm!important;line-height:1.14!important}
+        #weeklyReportPreview .report-date-page{gap:6mm!important}
         #weeklyReportPreview .readable-report-table{margin:0!important;table-layout:fixed!important;width:100%!important}
         #weeklyReportPreview .readable-report-table thead{display:table-header-group!important}
-        #weeklyReportPreview .readable-report-table th{font-size:7pt!important;padding:1.2mm .7mm!important;line-height:1.12!important;font-weight:700!important}
-        #weeklyReportPreview .readable-report-table td{font-size:7.7pt!important;padding:1.25mm .75mm!important;line-height:1.18!important;vertical-align:top!important}
-        #weeklyReportPreview .readable-report-table td small{font-size:6.2pt!important;margin-top:.7mm!important;line-height:1.15!important}
-        #weeklyReportPreview .report-row-subject{display:block!important;font-size:6.8pt!important;line-height:1.12!important;margin-top:.7mm!important;font-weight:800!important;color:#000!important}
+        #weeklyReportPreview .readable-report-table th{font-size:7pt!important;padding:1.0mm .65mm!important;line-height:1.1!important;font-weight:700!important}
+        #weeklyReportPreview .readable-report-table td{font-size:7.6pt!important;padding:1.0mm .7mm!important;line-height:1.14!important;vertical-align:top!important}
+        #weeklyReportPreview .readable-report-table td small{font-size:6.1pt!important;margin-top:.6mm!important;line-height:1.12!important}
+        #weeklyReportPreview .report-row-subject{display:block!important;font-size:6.8pt!important;line-height:1.1!important;margin-top:.55mm!important;font-weight:800!important;color:#000!important}
         #weeklyReportPreview .readable-report-table tr{break-inside:avoid!important;page-break-inside:avoid!important}
       }
     `;document.head.appendChild(s)
