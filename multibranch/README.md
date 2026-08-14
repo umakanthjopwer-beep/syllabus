@@ -20,6 +20,7 @@ Each branch owns its own:
 - Year Plans and Year Plan week rows
 - Weekly Status records
 - weekly-entry requests
+- branch operational settings
 - reports and audit results
 
 Every school-data query must be scoped by `branch_id` derived from the authenticated server session, never trusted from the browser.
@@ -46,6 +47,12 @@ Every school-data query must be scoped by `branch_id` derived from the authentic
 - Excel workbook adapter for the six required onboarding sheets.
 - Development Branch Onboarding screen that never writes live data directly.
 - Full second-branch mock simulation with separate Dean, HODs, teachers, sections, mappings, Year Plans, Weekly Status and reports.
+- Read-only production preflight audit SQL.
+- Khalsa Branch-1 backfill dry-run SQL that always ends in `ROLLBACK`.
+- Database-level same-branch composite relationship constraint design.
+- Branch-specific `branch_settings` design so settings such as `weekly_entry` are not shared across branches.
+- Zero-cost migration/backfill simulator and tests.
+- Read-only 14 Aug 2026 production baseline for future before/after verification.
 
 ## Zero-cost test status
 - Branch isolation tests: 14/14 passed.
@@ -55,18 +62,29 @@ Every school-data query must be scoped by `branch_id` derived from the authentic
 - Excel onboarding adapter tests: 3/3 passed.
 - Branch login/data-access tests: 18/18 passed.
 - Common-app branch identity tests: 6/6 passed.
-- Total current checks: 75/75 passed.
+- Migration/backfill simulator tests: 39/39 passed.
+- Total current checks: 114/114 passed.
+
+## Read-only production preflight status
+- Current schema and row counts captured without modification.
+- No case-insensitive collisions found for usernames, teacher names, section names, internal batch codes or subject names.
+- 27 relationship/orphan checks all returned zero.
+- Current Year Plan storage inventory: 52 total, 48 with storage paths, 4 without storage paths.
+- `weekly_entry` identified as a branch-operational setting that must be isolated per branch.
 
 ## Rollout plan
 1. Keep all development isolated from the live Khalsa application.
-2. Finalize branch-aware schema and a production-safe backfill/rollback script.
-3. Backfill existing Khalsa rows to the Khalsa branch only after explicit approval and backup verification.
-4. Convert every production API action to server-derived branch context.
-5. Activate the branch onboarding/import workflow.
-6. Verify storage file paths are branch-separated.
-7. Test a second branch with separate users, Year Plans and reports.
-8. Verify no cross-branch read/write or signed-file access is possible.
-9. Only after explicit approval, migrate production and enable the common multi-branch app.
+2. Finalize branch-aware schema and production-safe backfill/rollback scripts.
+3. Take a fresh read-only baseline and verify backup/storage manifest immediately before any real cutover.
+4. Backfill existing Khalsa rows to Khalsa Branch 1 only after explicit approval.
+5. Convert every production API action to server-derived branch context.
+6. Add database same-branch constraints and branch-specific settings.
+7. Activate the branch onboarding/import workflow.
+8. Verify new storage paths are branch-separated and old Khalsa files remain securely accessible only through owned signed URLs.
+9. Smoke-test Khalsa historical data, login, Year Plans, Weekly Status and reports.
+10. Test a second branch with separate users, Year Plans and reports.
+11. Verify no cross-branch read/write or signed-file access is possible.
+12. Only after explicit approval, enable the common multi-branch app for additional branches.
 
 ## Current status
-The production app remains single-branch and unchanged. The multi-branch foundation, onboarding flow, branch-wise login/data-access layer and two-branch isolation simulation exist only on `multibranch-foundation`.
+The production app remains single-branch and unchanged. The multi-branch foundation, onboarding flow, branch-wise login/data-access layer, production-safe migration design and two-branch isolation simulation exist only on `multibranch-foundation`.
