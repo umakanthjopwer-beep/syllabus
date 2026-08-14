@@ -1,8 +1,12 @@
-// Readable multi-page weekly report printing.
-// Keeps All Subjects reports legible by paginating instead of shrinking fonts.
+// Readable A4 landscape weekly report printing.
+// Each logical report page must fit on one physical A4 sheet; never shrink text or let a row spill to a hidden extra page.
 (function(){
-  const ROWS_PER_PAGE=8;
-  function chunks(rows,size){const out=[];for(let i=0;i<rows.length;i+=size)out.push(rows.slice(i,i+size));return out.length?out:[[]]}
+  const MAX_ROWS_PER_PAGE=6;
+  function paginate(rows){
+    const out=[];
+    for(let i=0;i<(rows||[]).length;i+=MAX_ROWS_PER_PAGE)out.push(rows.slice(i,i+MAX_ROWS_PER_PAGE));
+    return out.length?out:[[]]
+  }
   function isAllSubjects(){
     const live=document.getElementById("printReportSubject")?.value;
     return (live||REPORT_STATE.subject||REPORT_ALL_SUBJECTS)===REPORT_ALL_SUBJECTS
@@ -16,9 +20,7 @@
   function reportClassCode(r){return r.batch||r.section||"—"}
   function subjectLine(r){
     const code=reportClassCode(r);
-    if(isAllSubjects()){
-      return `<b class="report-row-class">${reportEsc(code)}</b><span class="report-row-subject">${reportEsc(r.subject||"Subject not available")}</span>`
-    }
+    if(isAllSubjects())return `<b class="report-row-class">${reportEsc(code)}</b><span class="report-row-subject">${reportEsc(r.subject||"Subject not available")}</span>`;
     return `<b class="report-row-class">${reportEsc(code)}</b>`
   }
   function onePage(rows,page,totalPages,offset){
@@ -46,30 +48,41 @@
   }
 
   reportSheetHtml=function(rows){
-    const pages=chunks(rows||[],ROWS_PER_PAGE),total=pages.length;
-    return `<div class="readable-report-pages">${pages.map((p,i)=>onePage(p,i+1,total,i*ROWS_PER_PAGE)).join("")}</div>`
+    const pages=paginate(rows||[]),total=pages.length;
+    let offset=0;
+    const html=pages.map((p,i)=>{const h=onePage(p,i+1,total,offset);offset+=p.length;return h}).join("");
+    return `<div class="readable-report-pages">${html}</div>`
   };
 
   function styles(){
     if(document.getElementById("readableReportPrintStyles"))return;
     const s=document.createElement("style");s.id="readableReportPrintStyles";s.textContent=`
-      .readable-report-pages{display:grid;gap:18px}.readable-report-page{margin-bottom:0!important}
+      .readable-report-pages{display:grid;gap:18px}.readable-report-page{margin-bottom:0!important;box-sizing:border-box!important}
       .report-class-subject-cell{text-align:center!important}.report-row-class{display:block;font-weight:800}.report-row-subject{display:block!important;margin-top:4px!important;font-size:7px!important;line-height:1.2!important;font-weight:800!important;color:#234f86!important}
       .readable-report-table th:nth-child(1){width:3.5%!important}.readable-report-table th:nth-child(2){width:8%!important}.readable-report-table th:nth-child(3){width:6%!important}.readable-report-table th:nth-child(4){width:6%!important}.readable-report-table th:nth-child(5){width:6%!important}.readable-report-table th:nth-child(6){width:20.5%!important}.readable-report-table th:nth-child(7){width:20.5%!important}.readable-report-table th:nth-child(8){width:6%!important}.readable-report-table th:nth-child(9){width:12.5%!important}.readable-report-table th:nth-child(10){width:10.5%!important}
       @media screen{.readable-report-page{width:1120px;max-width:100%;min-width:900px}.report-row-subject{font-size:8px!important}}
       @media print{
         @page{size:A4 landscape;margin:7mm}
-        body{background:#fff!important}
-        .readable-report-pages{display:block!important}
-        #weeklyReportPreview .readable-report-page{position:relative!important;left:auto!important;top:auto!important;width:100%!important;min-width:0!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;break-after:page!important;page-break-after:always!important}
+        html,body{width:auto!important;height:auto!important;background:#fff!important}
+        .readable-report-pages{display:block!important;width:100%!important;margin:0!important;padding:0!important}
+        #weeklyReportPreview .readable-report-page{
+          position:relative!important;left:auto!important;top:auto!important;
+          width:100%!important;min-width:0!important;max-width:none!important;height:auto!important;min-height:0!important;
+          margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;overflow:visible!important;
+          break-inside:avoid-page!important;page-break-inside:avoid!important;
+          break-after:page!important;page-break-after:always!important;
+        }
         #weeklyReportPreview .readable-report-page:last-child{break-after:auto!important;page-break-after:auto!important}
-        #weeklyReportPreview .weekly-paper-title{font-size:14pt!important;margin:0 0 1mm!important}
-        #weeklyReportPreview .weekly-paper-subtitle{font-size:9pt!important;margin:0 0 3mm!important}
-        #weeklyReportPreview .weekly-meta-table td{font-size:8pt!important;padding:1.6mm 2mm!important;line-height:1.25!important}
-        #weeklyReportPreview .readable-report-table th{font-size:7pt!important;padding:1.5mm .8mm!important;line-height:1.2!important;font-weight:700!important}
-        #weeklyReportPreview .readable-report-table td{font-size:8pt!important;padding:1.7mm .9mm!important;line-height:1.3!important;vertical-align:top!important}
-        #weeklyReportPreview .readable-report-table td small{font-size:6.4pt!important;margin-top:1mm!important;line-height:1.25!important}
-        #weeklyReportPreview .report-row-subject{display:block!important;font-size:7pt!important;line-height:1.2!important;margin-top:1mm!important;font-weight:800!important;color:#000!important}
+        #weeklyReportPreview .weekly-paper-title{font-size:14pt!important;margin:0 0 1mm!important;line-height:1.1!important}
+        #weeklyReportPreview .weekly-paper-subtitle{font-size:9pt!important;margin:0 0 2mm!important;line-height:1.1!important}
+        #weeklyReportPreview .weekly-meta-table{margin:0!important}
+        #weeklyReportPreview .weekly-meta-table td{font-size:8pt!important;padding:1.4mm 1.7mm!important;line-height:1.18!important}
+        #weeklyReportPreview .readable-report-table{margin:0!important;table-layout:fixed!important;width:100%!important}
+        #weeklyReportPreview .readable-report-table thead{display:table-header-group!important}
+        #weeklyReportPreview .readable-report-table th{font-size:7pt!important;padding:1.3mm .7mm!important;line-height:1.15!important;font-weight:700!important}
+        #weeklyReportPreview .readable-report-table td{font-size:8pt!important;padding:1.45mm .8mm!important;line-height:1.22!important;vertical-align:top!important}
+        #weeklyReportPreview .readable-report-table td small{font-size:6.4pt!important;margin-top:.8mm!important;line-height:1.2!important}
+        #weeklyReportPreview .report-row-subject{display:block!important;font-size:7pt!important;line-height:1.15!important;margin-top:.8mm!important;font-weight:800!important;color:#000!important}
         #weeklyReportPreview .readable-report-table tr{break-inside:avoid!important;page-break-inside:avoid!important}
       }
     `;document.head.appendChild(s)
