@@ -29,6 +29,7 @@ function excelSubmittedAt(r){
   const d=new Date(r.savedAt);if(Number.isNaN(d.getTime()))return"Submitted";
   return `Submitted: ${d.toLocaleString("en-IN",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:true})}`
 }
+function excelClassCode(r){return r.batch||r.section||""}
 
 exportWeeklyReportExcel=async function(){
   const rows=REPORT_STATE.rows||reportFilteredRows();
@@ -46,7 +47,7 @@ exportWeeklyReportExcel=async function(){
   ];
   rows.forEach((r,i)=>sheetData.push([
     i+1,
-    `${r.section}${allSubjects?`\n${r.subject||""}`:(r.batch?`\n${r.batch}`:"")}`,
+    `${excelClassCode(r)}${allSubjects?`\n${r.subject||""}`:""}`,
     r.workingDays??"",r.plannedPeriods??"",r.periodsTaken??"",r.plannedTopic||"",r.currentTopic||"",r.lagPeriods??"",r.reason||"",
     `${r.teacher||""}${r.teacher?"\n":""}${excelSubmittedAt(r)}`
   ]));
