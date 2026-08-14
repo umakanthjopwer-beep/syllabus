@@ -45,6 +45,9 @@ Every school-data query must be scoped by `branch_id` derived from the authentic
 - Detailed conversion checklist for the existing `syllabus-api`, including removal of the unsafe hard-coded bootstrap path before multi-branch cutover.
 - Full branch-aware `syllabus-api` development draft covering login/session/bootstrap/users/Weekly Status/Year Plans/storage/logout.
 - Static security tests for the API draft and TypeScript parse verification.
+- Branch-aware supporting Edge Function drafts for `weekly-entry-access`, `yearplan-weeks-all`, `syllabus-impersonate`, `yearplan-smart-api`, `seed-staff-users`, and controlled `syllabus-recover-admin` recovery.
+- Shared Edge Function branch authentication/ownership helper.
+- Static security review suite for all six supporting replacements.
 - Current Edge Function branch-cutover matrix covering all 10 active production functions.
 - Production cutover runbook and rollback runbook.
 - Excel onboarding field contract and validation rules.
@@ -59,7 +62,7 @@ Every school-data query must be scoped by `branch_id` derived from the authentic
 - Zero-cost migration/backfill simulator and tests.
 - Read-only 14 Aug 2026 production baseline for future before/after verification.
 
-## Zero-cost test status
+## Verified zero-cost test status
 - Branch isolation tests: 14/14 passed.
 - Server branch authorization tests: 10/10 passed.
 - Onboarding validator tests: 8/8 passed.
@@ -70,7 +73,8 @@ Every school-data query must be scoped by `branch_id` derived from the authentic
 - Migration/backfill simulator tests: 39/39 passed.
 - Branch-aware `syllabus-api` static security checks: 31/31 passed.
 - TypeScript parse check for the API draft: passed.
-- Total counted automated checks: 145/145 passed.
+- Total previously executed automated checks: 145/145 passed.
+- Supporting Edge Function security suite has been prepared in the repository. It has not been counted above because no paid/dev CI environment is being used to execute it.
 
 ## Read-only production preflight status
 - Current schema and row counts captured without modification.
@@ -79,7 +83,8 @@ Every school-data query must be scoped by `branch_id` derived from the authentic
 - Current Year Plan storage inventory: 52 total, 48 with storage paths, 4 without storage paths.
 - `weekly_entry` identified as a branch-operational setting that must be isolated per branch.
 - Current production Edge Function inventory contains 10 active functions; every data-bearing function must be branch-aware or disabled before Branch 2 activation.
-- `weekly-entry-access`, `yearplan-weeks-all`, `syllabus-impersonate`, `yearplan-smart-api`, `seed-staff-users`, and `syllabus-recover-admin` currently contain global/single-branch assumptions and are explicitly blocked from Branch 2 rollout until converted or retired.
+- Development replacements are now prepared for `weekly-entry-access`, `yearplan-weeks-all`, `syllabus-impersonate`, `yearplan-smart-api`, `seed-staff-users`, and `syllabus-recover-admin`; none is deployed.
+- `syllabus-app`, `syllabus-web`, and `publish-syllabus-app` remain separate common-asset/publishing audit items before final rollout.
 
 ## Rollout plan
 1. Keep all development isolated from the live Khalsa application.
@@ -96,4 +101,4 @@ Every school-data query must be scoped by `branch_id` derived from the authentic
 12. Only after explicit approval, enable the common multi-branch app for additional branches.
 
 ## Current status
-The production app remains single-branch and unchanged. The multi-branch foundation, onboarding flow, branch-wise login/data-access layer, branch-aware API draft, production-safe migration/cutover/rollback package and two-branch isolation simulation exist only on `multibranch-foundation`.
+The production app remains single-branch and unchanged. The multi-branch foundation, onboarding flow, branch-wise login/data-access layer, branch-aware API draft, supporting Edge Function replacements, production-safe migration/cutover/rollback package and two-branch isolation simulation exist only on `multibranch-foundation`.
