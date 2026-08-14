@@ -8,19 +8,22 @@
     const r=await fetch(FULL_WEEKS_API,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${t}`},body:"{}"});
     let out={};try{out=await r.json()}catch(e){}if(!r.ok)throw new Error(out.error||`Year Plan data request failed (${r.status})`);return out
   }
+  const previousReloadRemote=reloadRemote;
   reloadRemote=async function(){
-    // Bootstrap supplies users/mappings. Replace its potentially truncated/legacy-filtered
-    // plan catalog with the complete role-scoped catalog before any UI mapping happens.
-    const r=await remoteCall("bootstrap");
+    // Keep all existing refresh behavior, then replace the potentially truncated/legacy-filtered
+    // Year Plan catalog with the complete role-scoped catalog and re-apply it once.
+    const r=await previousReloadRemote();
     try{
       const full=await fullCatalog();
       if(Array.isArray(full.plans))r.plans=full.plans;
       if(Array.isArray(full.assignments))r.assignments=full.assignments;
       if(Array.isArray(full.weeks))r.weeks=full.weeks;
       if(Array.isArray(full.planSubjects))r.planSubjects=full.planSubjects;
-      r.completeYearPlanWeekCount=Number(full.count||0)
+      r.completeYearPlanWeekCount=Number(full.count||0);
+      applyRemoteData(r)
     }catch(e){console.error("Complete Year Plan catalog",e)}
-    applyRemoteData(r);return r
+    if(document.getElementById("wkWeek")&&typeof fillWeeklyCalendarFromPlan==="function")setTimeout(()=>{try{fillWeeklyCalendarFromPlan(true)}catch(e){console.warn("Weekly autofill refresh",e)}},0);
+    return r
   };
 
   function monday(iso){if(!iso)return"";const d=new Date(iso+"T00:00:00Z"),back=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-back);return d.toISOString().slice(0,10)}
