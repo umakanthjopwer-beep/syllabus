@@ -1,5 +1,6 @@
 // Final Weekly Status autofill hardening.
-// Uses all matching class-subject plans, then falls back to the original stored source for a missing week.
+// Uses all matching class-subject plans, merges split source rows into Monday-Saturday weeks,
+// then falls back to the original stored source for a missing week.
 (function(){
   const sourceCache=new Map(),pending=new Map();
   const clean=v=>String(v??"").trim();
@@ -8,10 +9,16 @@
   function matchingPlans(section,subject){
     const sub=canonicalSubject(subject||"");return(data.plans||[]).filter(p=>p.enabled!==false&&p.assignedSections?.includes(section)&&planHasSubject(p,sub))
   }
-  function rowScore(r){return(clean(r.topic)?10000+clean(r.topic).length:0)+(r.workingDays!=null?200:0)+(r.plannedPeriods!=null?100:0)+(r.startDate===monday(r.startDate)&&((r.endDate||r.startDate)===saturday(monday(r.startDate)))?50:0)}
+  function mergeWeekGroup(group,ws){
+    const exact=group.filter(r=>r.startDate===ws&&(r.endDate||r.startDate)===saturday(ws)),use=exact.length?exact:group;
+    const spans=new Map();for(const r of use){const key=`${r.startDate}|${r.endDate||r.startDate}`,old=spans.get(key);if(!old){spans.set(key,{...r});continue}if(clean(r.topic)&&!clean(old.topic).includes(clean(r.topic)))old.topic=clean(old.topic)?`${clean(old.topic)} | ${clean(r.topic)}`:clean(r.topic);if(r.workingDays!=null)old.workingDays=Math.max(Number(old.workingDays||0),Number(r.workingDays||0));if(r.plannedPeriods!=null)old.plannedPeriods=Math.max(Number(old.plannedPeriods||0),Number(r.plannedPeriods||0))}
+    const uniq=[...spans.values()],topics=[];for(const r of uniq)for(const t of clean(r.topic).split(/\s*\|\s*/).filter(Boolean))if(!topics.includes(t))topics.push(t);
+    const days=uniq.map(r=>r.workingDays).filter(v=>v!=null&&v!=="").map(Number).filter(Number.isFinite),periods=uniq.map(r=>r.plannedPeriods).filter(v=>v!=null&&v!=="").map(Number).filter(Number.isFinite),sample=uniq.find(r=>clean(r.topic))||uniq[0]||{};
+    return{...sample,startDate:ws,endDate:saturday(ws),topic:topics.join(" | "),workingDays:days.length?Math.min(6,exact.length?Math.max(...days):days.reduce((a,b)=>a+b,0)):null,plannedPeriods:periods.length?(exact.length?Math.max(...periods):periods.reduce((a,b)=>a+b,0)):null}
+  }
   function bestRows(rows){
-    const by=new Map();for(const r of rows||[]){if(!r.startDate)continue;const key=monday(r.startDate),old=by.get(key);if(!old||rowScore(r)>rowScore(old))by.set(key,{...r,startDate:key,endDate:saturday(key)})}
-    return[...by.values()].sort((a,b)=>String(a.startDate).localeCompare(String(b.startDate)))
+    const groups=new Map();for(const r of rows||[]){if(!r.startDate)continue;const ws=monday(r.startDate);if(!groups.has(ws))groups.set(ws,[]);groups.get(ws).push(r)}
+    return[...groups.entries()].map(([ws,g])=>mergeWeekGroup(g,ws)).sort((a,b)=>String(a.startDate).localeCompare(String(b.startDate)))
   }
   const basePlanRowsFor=planRowsFor;
   planRowsFor=function(section,subject){
@@ -35,8 +42,8 @@
   }
   function filteredSourceRows(d,section,subject){const grade=Number(sectionMeta(section)?.grade||0),sub=canonicalSubject(subject||"");return(d.rows||[]).filter(r=>(!r.grade||Number(r.grade)===grade)&&same(canonicalSubject(r.subject||sub),sub))}
   function recoveredAggregate(rows,w){
-    const matched=(rows||[]).filter(r=>r.startDate&&r.startDate<=w.end&&(r.endDate||r.startDate)>=w.start),topics=[...new Set(matched.map(r=>clean(r.topic)).filter(Boolean))],days=matched.map(r=>r.workingDays).filter(v=>v!=null&&v!=="").map(Number).filter(Number.isFinite),periods=matched.map(r=>r.plannedPeriods).filter(v=>v!=null&&v!=="").map(Number).filter(Number.isFinite);
-    return{matched,topic:topics.join(" | "),workingDays:days.length?Math.min(6,Math.max(...days)):null,plannedPeriods:periods.length?Math.max(...periods):null}
+    const matched=(rows||[]).filter(r=>r.startDate&&r.startDate<=w.end&&(r.endDate||r.startDate)>=w.start),merged=bestRows(matched),row=merged.find(r=>r.startDate===w.start)||mergeWeekGroup(matched,w.start);
+    return{matched,topic:clean(row?.topic),workingDays:row?.workingDays??null,plannedPeriods:row?.plannedPeriods??null}
   }
   function cacheRecovered(plan,section,subject,w,agg){
     if(!plan||!agg.topic)return;const grade=Number(sectionMeta(section)?.grade||0),sub=canonicalSubject(subject||""),label=calendarWeekForDate(w.start)?.label||w.label||"",weekNo=calendarWeekForDate(w.start)?.weekNo||0,row={week:label,weekLabel:label,weekNo,startDate:w.start,endDate:w.end,workingDays:agg.workingDays,plannedPeriods:agg.plannedPeriods,topic:agg.topic,grade,subject:sub,recoveredFromSource:true};
