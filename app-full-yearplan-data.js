@@ -2,6 +2,8 @@
 // and prefer canonical Monday-Saturday rows over legacy single-date recapture rows.
 (function(){
   const FULL_WEEKS_API="https://sqgytgudepsgucpkecbl.supabase.co/functions/v1/yearplan-weeks-all";
+  const CLASS_X_REVISION_START="2026-08-31";
+  const CLASS_X_REVISION_END="2027-04-03";
   const clean=v=>String(v??"").trim();
   async function fullCatalog(){
     const t=remoteToken();if(!t)throw new Error("Please sign in again.");
@@ -24,7 +26,8 @@
     return r
   };
   function monday(iso){if(!iso)return"";const d=new Date(iso+"T00:00:00Z"),back=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-back);return d.toISOString().slice(0,10)}
-  function saturday(start){const d=new Date(start+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+5);return d.toISOString().slice(0,10)}
+  function addDays(start,n){const d=new Date(start+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
+  function saturday(start){return addDays(start,5)}
   function canonicalRows(rows){
     const byWeek=new Map();for(const r of rows||[]){if(!r.startDate)continue;const ws=monday(r.startDate);if(!byWeek.has(ws))byWeek.set(ws,[]);byWeek.get(ws).push(r)}
     const out=[];for(const [ws,g] of byWeek){
@@ -33,9 +36,27 @@
     }
     return out.sort((a,b)=>String(a.startDate).localeCompare(String(b.startDate)))
   }
+  function withClassXRevision(section,subject,plan,rows){
+    const grade=Number(sectionMeta(section)?.grade||0);if(grade!==10||!plan)return rows;
+    const sub=canonicalSubject(subject||"");const byStart=new Map((rows||[]).map(r=>[monday(r.startDate),{...r}]));
+    for(let ws=CLASS_X_REVISION_START;ws<=CLASS_X_REVISION_END;ws=addDays(ws,7)){
+      const existing=byStart.get(ws),label=calendarWeekForDate(ws)?.label||"";
+      if(existing){
+        if(!clean(existing.topic)){existing.topic=`Class X Revision Schedule – ${sub}`;existing.syntheticRevision=true}
+        if(!existing.endDate)existing.endDate=saturday(ws);if(!existing.week)existing.week=label;if(!existing.weekLabel)existing.weekLabel=label;if(!existing.weekNo)existing.weekNo=calendarWeekForDate(ws)?.weekNo||0;byStart.set(ws,existing)
+      }else{
+        byStart.set(ws,{grade:10,subject:sub,startDate:ws,endDate:saturday(ws),workingDays:null,plannedPeriods:null,topic:`Class X Revision Schedule – ${sub}`,week:label,weekLabel:label,weekNo:calendarWeekForDate(ws)?.weekNo||0,academicWeekNo:calendarWeekForDate(ws)?.weekNo||0,syntheticRevision:true})
+      }
+    }
+    return[...byStart.values()].sort((a,b)=>String(a.startDate).localeCompare(String(b.startDate)))
+  }
   const oldPlanRowsFor=planRowsFor;
-  planRowsFor=function(section,subject){const x=oldPlanRowsFor(section,subject);return{...x,rows:canonicalRows(x.rows||[])}};
-  window.yearPlanAutofillDiagnostic=function(section,subject,weekStart){const x=planRowsFor(section,canonicalSubject(subject||"")),we=saturday(weekStart),agg=aggregateWeek(x.rows,weekStart,we);return{plan:x.plan?.fileName||"",rows:x.rows.length,matched:agg.matched.length,topic:agg.topic,workingDays:agg.workingDays,plannedPeriods:agg.plannedPeriods}};
+  planRowsFor=function(section,subject){const x=oldPlanRowsFor(section,subject),rows=canonicalRows(x.rows||[]);return{...x,rows:withClassXRevision(section,subject,x.plan,rows)}};
+  const previousFillWeekly=fillWeeklyCalendarFromPlan;
+  fillWeeklyCalendarFromPlan=function(preserveSelection=true){const r=previousFillWeekly(preserveSelection);try{const section=document.getElementById("wkSection")?.value,subject=canonicalSubject(document.getElementById("wkSubject")?.value||""),w=selectedCalendarWeek?.();if(Number(sectionMeta(section)?.grade||0)===10&&w&&w.start>=CLASS_X_REVISION_START){const x=planRowsFor(section,subject),agg=aggregateWeek(x.rows,w.start,w.end),isRevision=(agg.matched||[]).some(q=>q.syntheticRevision);if(isRevision){const note=document.getElementById("yearPlanSourceNote");if(note)note.textContent=`Class X revision phase · ${subject} · Auto-filled as Revision Schedule because the Year Plan switches from new-topic teaching to revision from September.`}}}catch(e){}return r};
+  fillWeeklyFromPlan=function(){return fillWeeklyCalendarFromPlan(true)};
+  applyWeekDates=function(){return fillWeeklyCalendarFromPlan(true)};
+  window.yearPlanAutofillDiagnostic=function(section,subject,weekStart){const x=planRowsFor(section,canonicalSubject(subject||"")),we=saturday(weekStart),agg=aggregateWeek(x.rows,weekStart,we);return{plan:x.plan?.fileName||"",rows:x.rows.length,matched:agg.matched.length,topic:agg.topic,workingDays:agg.workingDays,plannedPeriods:agg.plannedPeriods,revisionFallback:(agg.matched||[]).some(r=>r.syntheticRevision)}};
 })();
 
 // Keep Super Admin return/logout controls visible while viewing a Teacher/HOD account.
