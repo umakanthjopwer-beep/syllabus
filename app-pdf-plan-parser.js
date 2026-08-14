@@ -1,34 +1,90 @@
-function pdfDateToken(s){const z=String(s||"").replaceAll("‐","-").replaceAll("–","-").replaceAll(".","-");const m=z.match(/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/);if(!m)return null;let y=Number(m[3]);if(y<100)y+=2000;const d=`${y}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;return d>="2026-06-01"&&d<="2027-04-30"?d:null}
-function pdfLine(items){const groups=[];for(const it of items.sort((a,b)=>b.y-a.y||a.x-b.x)){let g=groups.find(x=>Math.abs(x.y-it.y)<2);if(!g){g={y:it.y,items:[]};groups.push(g)}g.items.push(it)}return groups.sort((a,b)=>b.y-a.y).map(g=>g.items.sort((a,b)=>a.x-b.x).map(x=>x.str).join(" ").replace(/\s+/g," ").trim()).filter(Boolean).join("\n")}
-function pdfColHeader(items,rx){const m=items.find(x=>rx.test(String(x.str||"").trim()));return m?m.x:null}
-function pdfPageTableRows(items,pageText){
-  const grade=detectGrades(pageText)[0]||null,subjects=detectSubjects(pageText);if(!grade)return[];
-  const dateX=pdfColHeader(items,/^Date$/i),daysX=pdfColHeader(items,/Working/i),periodX=pdfColHeader(items,/^Period$/i),topicX=pdfColHeader(items,/^Topic$/i),trackAX=pdfColHeader(items,/Track.*A/i),trackBX=pdfColHeader(items,/Track.*B/i),activityX=pdfColHeader(items,/^Activity$/i);
-  if(dateX==null||daysX==null)return[];
-  const cols=[{k:"date",x:dateX},{k:"days",x:daysX}];if(periodX!=null)cols.push({k:"period",x:periodX});if(topicX!=null)cols.push({k:"topic",x:topicX});if(trackAX!=null)cols.push({k:"a",x:trackAX});if(trackBX!=null)cols.push({k:"b",x:trackBX});if(activityX!=null)cols.push({k:"activity",x:activityX});cols.sort((a,b)=>a.x-b.x);
-  const boundaries=cols.map((c,i)=>({k:c.k,min:i?((cols[i-1].x+c.x)/2):-Infinity,max:i<cols.length-1?((c.x+cols[i+1].x)/2):Infinity}));
-  const inDate=items.filter(x=>{const b=boundaries.find(z=>z.k==="date");return x.x>=b.min&&x.x<b.max}).sort((a,b)=>b.y-a.y);
-  const starts=[];for(let i=0;i<inDate.length;i++){const d=pdfDateToken(String(inDate[i].str||"").trim());if(!d)continue;const between=inDate.slice(i+1,i+3),to=between.find(x=>/^to$/i.test(String(x.str||"").trim())),endItem=to?inDate[inDate.indexOf(to)+1]:null,end=endItem?pdfDateToken(String(endItem.str||"").trim()):null;starts.push({start:d,end:end||d,y:inDate[i].y});if(to&&endItem)i=inDate.indexOf(endItem)}
-  const unique=[];for(const r of starts)if(!unique.some(x=>x.start===r.start&&Math.abs(x.y-r.y)<2))unique.push(r);
-  const out=[];for(let i=0;i<unique.length;i++){const r=unique[i],nextY=i<unique.length-1?unique[i+1].y:-Infinity,region=items.filter(it=>it.y<=r.y+5&&it.y>nextY+5);const val=k=>{const b=boundaries.find(z=>z.k===k);return b?pdfLine(region.filter(x=>x.x>=b.min&&x.x<b.max&&x.y<r.y+6)):""};const dayText=val("days"),days=Number(dayText.match(/\b([0-7])\b/)?.[1]||0)||null,periodText=val("period"),period=Number(periodText.match(/\b(\d{1,2})\b/)?.[1]||0)||null,activity=val("activity");
-    if(boundaries.some(x=>x.k==="a")){const a=val("a"),b=val("b");if(a&&!/^Track/i.test(a))out.push({grade,subject:"Track A",startDate:r.start,endDate:r.end,workingDays:days,plannedPeriods:null,topic:(a+(activity?` | ${activity}`:"")).trim()});if(b&&!/^Track/i.test(b))out.push({grade,subject:"Track B",startDate:r.start,endDate:r.end,workingDays:days,plannedPeriods:null,topic:(b+(activity?` | ${activity}`:"")).trim()})}
-    else{let topic=val("topic");if(!topic&&periodText&&!/^\d+$/.test(periodText.trim()))topic=periodText;out.push({grade,subject:subjects[0]||"",startDate:r.start,endDate:r.end,workingDays:days,plannedPeriods:period,topic:topic.trim()})}
-  }return out
+function pdfDateToken(s){
+  const z=String(s||"").trim().replaceAll("‐","-").replaceAll("–","-").replaceAll("—","-").replaceAll(".","-");
+  const m=z.match(/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/);if(!m)return null;
+  let y=Number(m[3]);if(y<100)y+=2000;const d=`${y}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;
+  return d>="2026-06-01"&&d<="2027-04-30"?d:null
 }
-function pdfRecoverRows(items,pageText){
-  const grade=detectGrades(pageText)[0]||null,subjects=detectSubjects(pageText),subject=canonicalSubject(subjects[0]||"");if(!grade)return[];
-  const hx=rx=>{const a=items.filter(x=>rx.test(String(x.str||"").trim()));return a.length?a.sort((x,y)=>y.y-x.y)[0].x:null};let dateX=hx(/^Date$|^Dates?$|^Week$/i),daysX=hx(/Working.*Days|No\.?\s*of\s*Days|Working/i),periodX=hx(/Periods?|No\.?\s*of\s*Periods?/i),topicX=hx(/Topic|Content|Syllabus|Chapter|Lesson/i),aX=hx(/Track.*A/i),bX=hx(/Track.*B/i),activityX=hx(/^Activity$/i);const dated=items.filter(x=>pdfDateToken(x.str));if(dateX==null&&dated.length)dateX=Math.min(...dated.map(x=>x.x));if(dateX==null||daysX==null)return[];
-  const groups=(arr,tol=2.5)=>{const g=[];for(const it of [...arr].sort((a,b)=>b.y-a.y||a.x-b.x)){let x=g.find(q=>Math.abs(q.y-it.y)<=tol);if(!x){x={y:it.y,items:[]};g.push(x)}x.items.push(it)}return g.sort((a,b)=>b.y-a.y).map(x=>({y:x.y,text:x.items.sort((a,b)=>a.x-b.x).map(q=>q.str).join(" ").replace(/\s+/g," ").trim()}))};const cols=[{k:"date",x:dateX},{k:"days",x:daysX}];for(const[k,x]of [["period",periodX],["topic",topicX],["a",aX],["b",bX],["activity",activityX]])if(x!=null&&!cols.some(c=>Math.abs(c.x-x)<3))cols.push({k,x});cols.sort((a,b)=>a.x-b.x);const bounds=cols.map((c,i)=>({k:c.k,min:i?((cols[i-1].x+c.x)/2):-Infinity,max:i<cols.length-1?((c.x+cols[i+1].x)/2):Infinity})),bd=bounds.find(x=>x.k==="date"),dateLines=groups(items.filter(x=>x.x>=bd.min&&x.x<bd.max)),anchors=[];
-  for(let i=0;i<dateLines.length;i++){const start=pdfDateToken(dateLines[i].text);if(!start)continue;let end=start,consume=0,n1=dateLines[i+1],n2=dateLines[i+2];if(n1&&/^to$/i.test(n1.text)&&n2&&pdfDateToken(n2.text)){end=pdfDateToken(n2.text);consume=2}else if(n1&&pdfDateToken(n1.text)&&/\bto\b/i.test(dateLines[i].text+" "+n1.text)){end=pdfDateToken(n1.text);consume=1}anchors.push({start,end,y:dateLines[i].y});i+=consume}
-  const val=(region,k)=>{const b=bounds.find(x=>x.k===k);return b?pdfLine(region.filter(x=>x.x>=b.min&&x.x<b.max)):""},out=[];for(let i=0;i<anchors.length;i++){const r=anchors[i],nextY=i<anchors.length-1?anchors[i+1].y:-Infinity,region=items.filter(it=>it.y<=r.y+5&&it.y>nextY+4),daysText=val(region,"days"),days=Number(daysText.match(/\b([0-7])\b/)?.[1]||0)||null,periodText=val(region,"period"),period=Number(periodText.match(/\b(\d{1,2})\b/)?.[1]||0)||null,activity=val(region,"activity");if(bounds.some(x=>x.k==="a")){const a=val(region,"a"),b=val(region,"b");if(a&&!/^Track/i.test(a))out.push({grade,subject:"Track A",startDate:r.start,endDate:r.end,workingDays:days,plannedPeriods:period,topic:a});if(b&&!/^Track/i.test(b))out.push({grade,subject:"Track B",startDate:r.start,endDate:r.end,workingDays:days,plannedPeriods:period,topic:b});continue}let topic=val(region,"topic");if(!topic&&periodText&&!/^\d+$/.test(periodText))topic=periodText;if(!topic&&activity)topic=`Activity: ${activity}`;if(!topic&&days>0){const min=topicX!=null?Math.max(daysX+5,topicX-18):(periodX!=null?periodX+8:daysX+8),parts=groups(region.filter(x=>x.x>=min)).map(g=>g.text).filter(t=>t&&!pdfDateToken(t)&&!/^to$/i.test(t)&&!/^\d{1,2}$/.test(t)&&!/^(periods?|topic|content|syllabus|chapter|lesson|activity|working.*days)$/i.test(t));topic=[...new Set(parts)].join(" | ")}out.push({grade,subject,startDate:r.start,endDate:r.end,workingDays:days,plannedPeriods:period,topic:String(topic||"").trim()})}return out
+function pdfLine(items){
+  const groups=[];for(const it of [...items].sort((a,b)=>b.y-a.y||a.x-b.x)){let g=groups.find(x=>Math.abs(x.y-it.y)<2.5);if(!g){g={y:it.y,items:[]};groups.push(g)}g.items.push(it)}
+  return groups.sort((a,b)=>b.y-a.y).map(g=>g.items.sort((a,b)=>a.x-b.x).map(x=>x.str).join(" ").replace(/\s+/g," ").trim()).filter(Boolean).join("\n")
+}
+function pdfTopHeaderX(items,rx){const a=items.filter(x=>rx.test(String(x.str||"").trim()));return a.length?a.sort((p,q)=>q.y-p.y)[0].x:null}
+function pdfGroups(items,tol=2.5){
+  const out=[];for(const it of [...items].sort((a,b)=>b.y-a.y||a.x-b.x)){let g=out.find(x=>Math.abs(x.y-it.y)<=tol);if(!g){g={y:it.y,items:[]};out.push(g)}g.items.push(it)}
+  return out.sort((a,b)=>b.y-a.y).map(g=>({y:g.y,text:g.items.sort((a,b)=>a.x-b.x).map(x=>x.str).join(" ").replace(/\s+/g," ").trim(),items:g.items}))
+}
+function pdfLayout(items,previous=null){
+  const current={
+    date:pdfTopHeaderX(items,/^Date$|^Dates?$|^Week$/i),
+    days:pdfTopHeaderX(items,/Working.*Days|No\.?\s*of\s*Working.*Days|No\.?\s*of\s*Days/i),
+    period:pdfTopHeaderX(items,/^Periods?$|No\.?\s*of\s*Periods?|Periods?\s*Per\s*Week/i),
+    topic:pdfTopHeaderX(items,/^Topic$|Content|Syllabus|Chapter|Lesson/i),
+    a:pdfTopHeaderX(items,/Track\s*[-–—]?\s*A/i),
+    b:pdfTopHeaderX(items,/Track\s*[-–—]?\s*B/i),
+    activity:pdfTopHeaderX(items,/^Activity$/i)
+  };
+  const hasFresh=current.date!=null&&current.days!=null;
+  if(hasFresh)return{...current,fresh:true};
+  if(previous&&previous.date!=null&&previous.days!=null)return{...previous,fresh:false};
+  const dated=items.filter(x=>pdfDateToken(String(x.str||"").trim()));
+  if(dated.length&&current.days!=null){current.date=Math.min(...dated.map(x=>x.x));return{...current,fresh:true}}
+  return null
+}
+function pdfBounds(layout){
+  const cols=[];for(const k of ["date","days","period","topic","a","b","activity"]){const x=layout?.[k];if(x!=null&&!cols.some(c=>Math.abs(c.x-x)<3))cols.push({k,x})}
+  cols.sort((a,b)=>a.x-b.x);return cols.map((c,i)=>({k:c.k,x:c.x,min:i?((cols[i-1].x+c.x)/2):-Infinity,max:i<cols.length-1?((c.x+cols[i+1].x)/2):Infinity}))
+}
+function pdfDateAnchors(items,bounds){
+  const bd=bounds.find(x=>x.k==="date");if(!bd)return[];
+  const lines=pdfGroups(items.filter(x=>x.x>=bd.min&&x.x<bd.max));const out=[];
+  for(let i=0;i<lines.length;i++){
+    const direct=[...lines[i].text.matchAll(/\b\d{1,2}[.\-‐–—]\d{1,2}[.\-‐–—]\d{2,4}\b/g)].map(m=>pdfDateToken(m[0])).filter(Boolean);
+    if(!direct.length)continue;const start=direct[0];let end=direct[1]||start,consume=0;
+    if(direct.length<2){const n1=lines[i+1],n2=lines[i+2];if(n1&&/^to$/i.test(n1.text)&&n2){const d=pdfDateToken(n2.text);if(d){end=d;consume=2}}else if(n1){const d=pdfDateToken(n1.text);if(d&&/\bto\b/i.test(lines[i].text+" "+n1.text)){end=d;consume=1}}}
+    out.push({start,end,y:lines[i].y});i+=consume
+  }
+  const uniq=[];for(const r of out)if(!uniq.some(x=>x.start===r.start&&x.end===r.end&&Math.abs(x.y-r.y)<2.5))uniq.push(r);return uniq
+}
+function pdfCell(region,bounds,k){const b=bounds.find(x=>x.k===k);return b?pdfLine(region.filter(x=>x.x>=b.min&&x.x<b.max)):""}
+function pdfBroadTopic(region,layout,bounds){
+  const startX=layout.topic!=null?layout.topic:(layout.period!=null?layout.period+8:layout.days+8);
+  const parts=pdfGroups(region.filter(x=>x.x>=startX)).map(g=>g.text).filter(t=>t&&!pdfDateToken(t)&&!/^to$/i.test(t)&&!/^\d{1,2}$/.test(t)&&!/^(periods?|topic|content|syllabus|chapter|lesson|activity|working.*days)$/i.test(t));
+  return[...new Set(parts)].join(" | ")
+}
+function pdfRowsFromLayout(items,pageText,layout){
+  const grade=detectGrades(pageText)[0]||null,subjects=detectSubjects(pageText),subject=canonicalSubject(subjects[0]||"");if(!grade||!layout)return[];
+  const bounds=pdfBounds(layout);if(!bounds.some(x=>x.k==="date")||!bounds.some(x=>x.k==="days"))return[];
+  const anchors=pdfDateAnchors(items,bounds);if(!anchors.length)return[];const out=[];
+  for(let i=0;i<anchors.length;i++){
+    const r=anchors[i],nextY=i<anchors.length-1?anchors[i+1].y:-Infinity,region=items.filter(it=>it.y<=r.y+6&&it.y>nextY+4);
+    const daysText=pdfCell(region,bounds,"days"),days=Number(daysText.match(/\b([0-7])\b/)?.[1]||0)||null;
+    const periodText=pdfCell(region,bounds,"period"),period=Number(periodText.match(/\b(\d{1,2})\b/)?.[1]||0)||null,activity=pdfCell(region,bounds,"activity");
+    if(bounds.some(x=>x.k==="a")){
+      let a=pdfCell(region,bounds,"a"),b=pdfCell(region,bounds,"b");
+      if(!a&&layout.a!=null)a=pdfBroadTopic(region.filter(x=>x.x>=layout.a&&(layout.b==null||x.x<layout.b)),{...layout,topic:layout.a},bounds);
+      if(!b&&layout.b!=null)b=pdfBroadTopic(region.filter(x=>x.x>=layout.b),{...layout,topic:layout.b},bounds);
+      if(a&&!/^Track\s*[-–—]?\s*A$/i.test(a.trim()))out.push({grade,subject:"Track A",startDate:r.start,endDate:r.end,workingDays:days,plannedPeriods:period,topic:(a+(activity?` | ${activity}`:"")).trim()});
+      if(b&&!/^Track\s*[-–—]?\s*B$/i.test(b.trim()))out.push({grade,subject:"Track B",startDate:r.start,endDate:r.end,workingDays:days,plannedPeriods:period,topic:(b+(activity?` | ${activity}`:"")).trim()});
+      continue
+    }
+    let topic=pdfCell(region,bounds,"topic");if(!topic&&periodText&&!/^\d+$/.test(periodText.trim()))topic=periodText;if(!topic&&activity)topic=`Activity: ${activity}`;if(!topic&&days>0)topic=pdfBroadTopic(region,layout,bounds);
+    out.push({grade,subject,startDate:r.start,endDate:r.end,workingDays:days,plannedPeriods:period,topic:String(topic||"").trim()})
+  }
+  return out
+}
+function pdfMergeRows(primary,extra){
+  const map=new Map();for(const r of [...primary,...extra]){const k=`${r.grade??""}|${canonicalSubject(r.subject||"")}|${r.startDate||""}|${r.endDate||r.startDate||""}`,old=map.get(k);if(!old){map.set(k,{...r});continue}if(!String(old.topic||"").trim()&&String(r.topic||"").trim())old.topic=r.topic;if(String(r.topic||"").trim().length>String(old.topic||"").trim().length)old.topic=r.topic;if(old.workingDays==null&&r.workingDays!=null)old.workingDays=r.workingDays;if(old.plannedPeriods==null&&r.plannedPeriods!=null)old.plannedPeriods=r.plannedPeriods}
+  return[...map.values()]
 }
 const _smartParseBase=smartParse;
 smartParse=async function(file){
   const ext=file.name.split(".").pop().toLowerCase();if(ext!=="pdf")return _smartParseBase(file);
-  const pdfjs=await loadPdfJs(),pdf=await pdfjs.getDocument({data:await file.arrayBuffer()}).promise;let text="",rows=[],gradeContext="",subjectContext="";
+  const pdfjs=await loadPdfJs(),pdf=await pdfjs.getDocument({data:await file.arrayBuffer()}).promise;let text="",rows=[],gradeContext="",subjectContext="",layoutContext=null;
   for(let i=1;i<=pdf.numPages;i++){
     const pg=await pdf.getPage(i),tc=await pg.getTextContent(),items=tc.items.map(x=>({str:x.str,x:x.transform[4],y:x.transform[5]})),pageText=items.map(x=>x.str).join(" ");
-    const pageGrades=detectGrades(pageText,file.name),pageSubjects=detectSubjects(pageText,file.name);if(pageGrades.length)gradeContext=pageText;if(pageSubjects.length)subjectContext=pageText;const parseText=[pageText,gradeContext,subjectContext].filter(Boolean).join(" "),primary=pdfPageTableRows(items,parseText)||[],extra=pdfRecoverRows(items,parseText),map=new Map(primary.map(r=>[`${r.grade??""}|${canonicalSubject(r.subject||"")}|${r.startDate||""}|${r.endDate||r.startDate||""}`,r]));for(const r of extra){const k=`${r.grade??""}|${canonicalSubject(r.subject||"")}|${r.startDate||""}|${r.endDate||r.startDate||""}`,old=map.get(k);if(!old){primary.push(r);map.set(k,r)}else{if(!String(old.topic||"").trim()&&String(r.topic||"").trim())old.topic=r.topic;if(old.workingDays==null&&r.workingDays!=null)old.workingDays=r.workingDays;if(old.plannedPeriods==null&&r.plannedPeriods!=null)old.plannedPeriods=r.plannedPeriods}}text+=pageText+"\n";rows.push(...primary)
+    const pageGrades=detectGrades(pageText,file.name),pageSubjects=detectSubjects(pageText,file.name);if(pageGrades.length)gradeContext=pageText;if(pageSubjects.length)subjectContext=pageText;
+    const parseText=[pageText,gradeContext,subjectContext].filter(Boolean).join(" "),nextLayout=pdfLayout(items,layoutContext);if(nextLayout)layoutContext=nextLayout;
+    const parsed=pdfRowsFromLayout(items,parseText,layoutContext);rows.push(...parsed);text+=pageText+"\n"
   }
-  return smartDetection(file,text,pdf.numPages,rows)
+  const d=smartDetection(file,text,pdf.numPages,pdfMergeRows([],rows));d.pdfContinuationLayout=true;return d
 };
