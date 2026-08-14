@@ -3,7 +3,7 @@
   for(const src of files){
     await new Promise((resolve,reject)=>{
       const s=document.createElement("script");
-      s.src=src+"?v=51";
+      s.src=src+"?v=52";
       s.onload=resolve;
       s.onerror=()=>reject(new Error("Failed to load "+src));
       document.head.appendChild(s);
