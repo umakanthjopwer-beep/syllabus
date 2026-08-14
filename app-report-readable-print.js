@@ -7,6 +7,12 @@
     const live=document.getElementById("printReportSubject")?.value;
     return (live||REPORT_STATE.subject||REPORT_ALL_SUBJECTS)===REPORT_ALL_SUBJECTS
   }
+  function submittedAt(r){
+    if(!r?.submitted)return"Pending";
+    if(!r.savedAt)return"Submitted";
+    const d=new Date(r.savedAt);if(Number.isNaN(d.getTime()))return"Submitted";
+    return `Submitted: ${d.toLocaleString("en-IN",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:true})}`
+  }
   function subjectLine(r){
     if(isAllSubjects()){
       return `<b class="report-row-class">${reportEsc(r.section)}</b><span class="report-row-subject">${reportEsc(r.subject||"Subject not available")}</span>`
@@ -26,13 +32,13 @@
       <table class="weekly-paper-table readable-report-table"><thead><tr>
         <th>S.No</th><th>Class/Sec</th><th>Working days</th><th>Planned periods</th><th>Periods taken</th>
         <th>Topic in Year Plan</th><th>Topic currently being taught</th>
-        <th>Lagging periods</th><th>Reason for lagging</th><th>Teacher</th>
+        <th>Lagging periods</th><th>Reason for lagging</th><th>Sign of Teacher / Submitted</th>
       </tr></thead><tbody>${rows.length?rows.map((r,i)=>`<tr>
         <td>${offset+i+1}</td><td class="report-class-subject-cell">${subjectLine(r)}</td>
         <td>${r.workingDays??"—"}</td><td>${r.plannedPeriods??"—"}</td><td>${r.periodsTaken??"—"}</td>
         <td>${reportEsc(r.plannedTopic||"—")}</td><td>${reportEsc(r.currentTopic||"Not submitted")}</td>
         <td>${r.lagPeriods==null?"—":r.lagPeriods}</td><td>${reportEsc(r.reason||"—")}</td>
-        <td><b>${reportEsc(r.teacher||"—")}</b><small class="${r.submitted?"submitted":"pending"}">${r.submitted?"Digitally submitted":"Pending"}</small></td>
+        <td><b>${reportEsc(r.teacher||"—")}</b><small class="${r.submitted?"submitted":"pending"}">${reportEsc(submittedAt(r))}</small></td>
       </tr>`).join(""):`<tr><td colspan="10">No records available for the selected filters.</td></tr>`}</tbody></table>
     </div>`
   }
@@ -47,7 +53,7 @@
     const s=document.createElement("style");s.id="readableReportPrintStyles";s.textContent=`
       .readable-report-pages{display:grid;gap:18px}.readable-report-page{margin-bottom:0!important}
       .report-class-subject-cell{text-align:center!important}.report-row-class{display:block;font-weight:800}.report-row-subject{display:block!important;margin-top:4px!important;font-size:7px!important;line-height:1.2!important;font-weight:800!important;color:#234f86!important}.report-row-batch{display:block!important;margin-top:3px!important;font-size:6.3px!important;color:#65758a!important}
-      .readable-report-table th:nth-child(1){width:3.5%!important}.readable-report-table th:nth-child(2){width:8%!important}.readable-report-table th:nth-child(3){width:6%!important}.readable-report-table th:nth-child(4){width:6%!important}.readable-report-table th:nth-child(5){width:6%!important}.readable-report-table th:nth-child(6){width:21%!important}.readable-report-table th:nth-child(7){width:21%!important}.readable-report-table th:nth-child(8){width:6%!important}.readable-report-table th:nth-child(9){width:13%!important}.readable-report-table th:nth-child(10){width:9.5%!important}
+      .readable-report-table th:nth-child(1){width:3.5%!important}.readable-report-table th:nth-child(2){width:8%!important}.readable-report-table th:nth-child(3){width:6%!important}.readable-report-table th:nth-child(4){width:6%!important}.readable-report-table th:nth-child(5){width:6%!important}.readable-report-table th:nth-child(6){width:20.5%!important}.readable-report-table th:nth-child(7){width:20.5%!important}.readable-report-table th:nth-child(8){width:6%!important}.readable-report-table th:nth-child(9){width:12.5%!important}.readable-report-table th:nth-child(10){width:10.5%!important}
       @media screen{.readable-report-page{width:1120px;max-width:100%;min-width:900px}.report-row-subject{font-size:8px!important}}
       @media print{
         @page{size:A4 landscape;margin:7mm}
@@ -60,7 +66,7 @@
         #weeklyReportPreview .weekly-meta-table td{font-size:8pt!important;padding:1.6mm 2mm!important;line-height:1.25!important}
         #weeklyReportPreview .readable-report-table th{font-size:7pt!important;padding:1.5mm .8mm!important;line-height:1.2!important;font-weight:700!important}
         #weeklyReportPreview .readable-report-table td{font-size:8pt!important;padding:1.7mm .9mm!important;line-height:1.3!important;vertical-align:top!important}
-        #weeklyReportPreview .readable-report-table td small{font-size:6.7pt!important;margin-top:1mm!important;line-height:1.2!important}
+        #weeklyReportPreview .readable-report-table td small{font-size:6.4pt!important;margin-top:1mm!important;line-height:1.25!important}
         #weeklyReportPreview .report-row-subject{display:block!important;font-size:7pt!important;line-height:1.2!important;margin-top:1mm!important;font-weight:800!important;color:#000!important}
         #weeklyReportPreview .report-row-batch{display:block!important;font-size:6.3pt!important;line-height:1.2!important;margin-top:.8mm!important;color:#000!important}
         #weeklyReportPreview .readable-report-table tr{break-inside:avoid!important;page-break-inside:avoid!important}
