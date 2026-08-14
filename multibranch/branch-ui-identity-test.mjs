@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {branchIdentity,branchLoginFields,needsBranchCode} from './branch-ui-identity.mjs';
+let n=0; const t=(name,fn)=>{fn();n++;console.log('PASS',name)};
+const b={id:'b2',code:'BR2',name:'Vanasthalipuram CBSE Branch',schoolName:'Sri Chaitanya School',location:'Vanasthalipuram',academicYear:'2026-27'};
+t('branch title includes location',()=>assert.equal(branchIdentity(b).topTitle,'Vanasthalipuram CBSE Branch · Vanasthalipuram'));
+t('document title is branch-specific',()=>assert.equal(branchIdentity(b).documentTitle,'Vanasthalipuram CBSE Branch | Syllabus Tracker'));
+t('short title includes branch code',()=>assert.equal(branchIdentity(b).shortTitle,'Vanasthalipuram CBSE Branch · BR2'));
+t('login field accepts branch code',()=>assert.equal(branchLoginFields({branchCode:' BR2 '}).branchCode,'BR2'));
+t('duplicate login requires branch code',()=>assert.equal(needsBranchCode(2),true));
+t('single matching user does not require branch code',()=>assert.equal(needsBranchCode(1),false));
+console.log(`TOTAL ${n}/6 passed`);
