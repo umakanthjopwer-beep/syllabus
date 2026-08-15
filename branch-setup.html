@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#173f78">
+<title>Syllabus Tracker | New Branch Setup</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f7fb;color:#182235;font-family:Inter,Arial,sans-serif}.top{background:#173f78;color:#fff;padding:22px 18px}.top-inner{max-width:980px;margin:auto;display:flex;gap:14px;align-items:center}.mark{width:50px;height:50px;border-radius:13px;background:#fff;color:#173f78;display:grid;place-items:center;font-weight:900;font-size:20px}.top h1{margin:0;font-size:23px}.top p{margin:4px 0 0;color:#d9e5f7;font-size:13px}.wrap{max-width:980px;margin:24px auto;padding:0 14px 40px}.notice{background:#fff8df;border:1px solid #efd789;border-radius:12px;padding:13px 15px;margin-bottom:18px;font-size:13px;line-height:1.5}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}.step{background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:16px}.step b{display:block;color:#173f78;margin-bottom:5px}.card{background:#fff;border:1px solid #dce4ef;border-radius:16px;padding:19px;margin:16px 0;box-shadow:0 2px 10px rgba(22,45,80,.04)}.eyebrow{font-size:10px;letter-spacing:1.1px;font-weight:800;color:#718096;text-transform:uppercase}.card h2{margin:5px 0 8px;font-size:20px}.muted{color:#6b778c;font-size:13px;line-height:1.5}.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:15px}button,.button{border:0;border-radius:10px;padding:12px 16px;font-weight:800;font-size:13px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.primary{background:#2467bd;color:#fff}.outline{background:#fff;color:#24466e;border:1px solid #b9c8da}.success{background:#e9f8ef;color:#177342;border:1px solid #bde7cb}.danger{background:#fff0f0;color:#9c2525;border:1px solid #efc0c0}.hidden{display:none!important}input[type=file]{width:100%;border:1px dashed #aebed1;border-radius:11px;padding:16px;background:#f9fbfe;margin-top:10px}.status{margin-top:12px;padding:11px 13px;border-radius:10px;background:#f5f7fa;font-size:13px;line-height:1.45;white-space:pre-wrap}.status.bad{background:#fff1f1;color:#9b2424}.status.good{background:#edf9f2;color:#176b40}.summary-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-top:14px}.metric{background:#f7f9fc;border:1px solid #e0e7f0;border-radius:10px;padding:11px;text-align:center}.metric strong{display:block;font-size:19px;color:#173f78}.metric small{font-size:10px;color:#758196}.table-wrap{overflow:auto;border:1px solid #dce4ef;border-radius:12px;margin-top:13px}table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:10px 11px;border-bottom:1px solid #e4e9f0;text-align:left;font-size:12px}th{background:#eef3f9;color:#35506f;font-size:10px;text-transform:uppercase;letter-spacing:.5px}code{font-size:12px;background:#f1f3f7;padding:3px 5px;border-radius:5px}.footer{text-align:center;color:#7b8798;font-size:11px;margin-top:24px}.lock{font-weight:800;color:#1e5f99}@media(max-width:720px){.steps{grid-template-columns:1fr}.summary-grid{grid-template-columns:repeat(2,1fr)}.top h1{font-size:19px}.card{padding:15px}.actions button,.actions .button{width:100%}}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-inner"><div class="mark">SC</div><div><h1>Syllabus Tracker — New Branch Setup</h1><p>Self-service branch registration · separate data · separate staff logins</p></div></div></header>
+<main class="wrap">
+<div id="linkNotice" class="notice"><span class="lock">Secure setup link.</span> This link is intended for authorized school branches. Each branch creates and manages only its own data.</div>
+<div class="steps"><div class="step"><b>1. Download & Fill</b><span class="muted">Enter your real branch, classes, staff, subjects and mappings.</span></div><div class="step"><b>2. Upload & Validate</b><span class="muted">The system checks errors before creating anything.</span></div><div class="step"><b>3. Activate & Login</b><span class="muted">Receive branch code and temporary staff passwords immediately.</span></div></div>
+
+<section class="card">
+<div class="eyebrow">Step 1</div><h2>Download the onboarding workbook</h2>
+<p class="muted">Use this standard workbook. Do not rename the required sheets or headings. Fill it with your branch's own information.</p>
+<div class="actions"><button id="downloadTemplate" class="outline">↓ Download Excel Template</button></div>
+</section>
+
+<section class="card">
+<div class="eyebrow">Step 2</div><h2>Upload your completed workbook</h2>
+<p class="muted">Nothing is created until validation succeeds and you press Activate Branch.</p>
+<input id="workbookFile" type="file" accept=".xlsx,.xls">
+<div id="workbookSummary" class="hidden"></div>
+<div id="status" class="status">Checking setup link…</div>
+<div class="actions"><button id="validateBtn" class="outline" disabled>Validate Workbook</button><button id="activateBtn" class="primary" disabled>Activate Branch</button></div>
+</section>
+
+<section id="credentialsCard" class="card hidden">
+<div class="eyebrow">Completed</div><h2>Your branch is active</h2>
+<p id="activationMessage" class="muted"></p>
+<div class="actions"><button id="downloadCredentials" class="success">↓ Download Login Credentials</button><a id="loginLink" class="button primary" href="https://syllabuslagging.pages.dev/">Open Syllabus Tracker Login</a></div>
+<div class="table-wrap"><table><thead><tr><th>Name</th><th>Role</th><th>Username</th><th>Temporary Password</th></tr></thead><tbody id="credentialsBody"></tbody></table></div>
+<p class="notice" style="margin:14px 0 0">Save the credentials now and distribute them securely. Each user must change the temporary password after login. Your branch's Weekly Status entry starts <b>CLOSED</b>; the Branch Super Admin can open it after setup is reviewed.</p>
+</section>
+<div class="footer">Syllabus Tracker · Branch data is isolated by authenticated branch ownership.</div>
+</main>
+<script>
+const API="https://sqgytgudepsgucpkecbl.supabase.co/functions/v1/branch-onboarding";
+const TOKEN=new URLSearchParams(location.search).get("key")||"";
+const REQUIRED=["Branch","Classes_Sections","Teachers","Subjects","Teaching_Mappings","HODs"];
+let WORKBOOK=null,CREDENTIALS=[],BRANCH_CODE="";
+const $=s=>document.querySelector(s);
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+function setStatus(msg,type=""){const el=$("#status");el.textContent=msg;el.className="status"+(type?" "+type:"")}
+function busy(btn,on,label){if(!btn)return;if(on){btn.dataset.old=btn.textContent;btn.textContent=label;btn.disabled=true}else{btn.textContent=btn.dataset.old||btn.textContent;btn.disabled=false}}
+async function call(action,payload={}){const r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,registration_token:TOKEN,...payload})});let out={};try{out=await r.json()}catch(e){}if(!r.ok){const msg=(out.errors&&out.errors.join("\n"))||out.error||`Request failed (${r.status})`;throw Object.assign(new Error(msg),{details:out})}return out}
+function templateSheet(headers){return XLSX.utils.aoa_to_sheet([headers])}
+function downloadTemplate(){
+ if(!window.XLSX){alert("Excel library is not available. Please reopen this page with internet access.");return}
+ const wb=XLSX.utils.book_new();
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
+  ["Syllabus Tracker - Branch Onboarding Template"],
+  ["Complete all required sheets. Do not rename sheet names or column headings."],
+  ["Use your branch's real data only. Do not copy another branch's data."],
+  ["Every active teacher receives a Teacher login automatically. HOD rows promote that person to HOD. Dean receives Super Admin."],
+  ["Branch Code must be unique, for example: KUKATPALLY-CBSE."],
+  ["New branch Weekly Status entry starts CLOSED until the branch Super Admin opens it."],
+  ["Year Plans are uploaded after branch activation from your own branch login."]
+ ]),"Instructions");
+ XLSX.utils.book_append_sheet(wb,templateSheet(["Branch Code","Branch Name","School Name","Location","Academic Year","Dean / Branch Super Admin Name","Dean Mobile Number / Login Username"]),"Branch");
+ XLSX.utils.book_append_sheet(wb,templateSheet(["Class Display Name","Internal Batch Code","Grade","Orientation / Programme","Floor (optional)","Active"]),"Classes_Sections");
+ XLSX.utils.book_append_sheet(wb,templateSheet(["Employee ID / Code (if available)","Teacher Full Name","Designation","Department","Primary Subject","Mobile Number / Login Username","Active"]),"Teachers");
+ XLSX.utils.book_append_sheet(wb,templateSheet(["Subject Name","Department","Active for Syllabus Tracking"]),"Subjects");
+ XLSX.utils.book_append_sheet(wb,templateSheet(["Class Display Name","Internal Batch Code","Subject","Department","Teacher Full Name","Periods Per Week","Week Pattern","Class Teacher","Co-Class Teacher","Active for Syllabus Tracking"]),"Teaching_Mappings");
+ XLSX.utils.book_append_sheet(wb,templateSheet(["HOD Name","Department","Mobile Number / Login Username","Employee ID / Code (if available)"]),"HODs");
+ XLSX.writeFile(wb,"Syllabus_Branch_Onboarding_Template.xlsx")
+}
+async function readWorkbook(file){
+ const buf=await file.arrayBuffer(),wb=XLSX.read(buf,{type:"array"}),missing=REQUIRED.filter(n=>!wb.Sheets[n]);if(missing.length)throw new Error("Missing required sheets: "+missing.join(", "));
+ const out={};for(const name of REQUIRED)out[name]=XLSX.utils.sheet_to_json(wb.Sheets[name],{defval:"",raw:false});return out
+}
+function renderSummary(w){const br=w.Branch?.[0]||{},counts={Sections:w.Classes_Sections?.length||0,Teachers:w.Teachers?.length||0,Subjects:w.Subjects?.length||0,Mappings:w.Teaching_Mappings?.length||0,HODs:w.HODs?.length||0};$("#workbookSummary").classList.remove("hidden");$("#workbookSummary").innerHTML=`<div class="notice" style="margin:13px 0 0"><b>${esc(br["Branch Code"]||"Branch code not entered")}</b> · ${esc(br["Branch Name"]||"")}<div class="summary-grid">${Object.entries(counts).map(([k,v])=>`<div class="metric"><strong>${v}</strong><small>${k}</small></div>`).join("")}</div></div>`}
+async function fileChanged(){WORKBOOK=null;CREDENTIALS=[];$("#credentialsCard").classList.add("hidden");$("#activateBtn").disabled=true;const f=$("#workbookFile").files?.[0];if(!f)return;try{WORKBOOK=await readWorkbook(f);renderSummary(WORKBOOK);$("#validateBtn").disabled=false;setStatus("Workbook loaded. Press Validate Workbook.")}catch(e){setStatus(e.message,"bad");$("#validateBtn").disabled=true}}
+async function validate(){if(!WORKBOOK)return;const btn=$("#validateBtn");busy(btn,true,"Validating…");$("#activateBtn").disabled=true;try{const r=await call("self_validate",{workbook:WORKBOOK});const s=r.summary||{};setStatus(`Validation passed. ${s.sections||0} sections, ${s.teachers||0} teachers, ${s.subjects||0} subjects, ${s.mappings||0} mappings and ${s.user_logins||0} logins are ready.${r.warnings?.length?"\nWarnings: "+r.warnings.join(" "):""}`,"good");$("#activateBtn").disabled=false}catch(e){setStatus(e.message,"bad")}finally{busy(btn,false,"Validate Workbook")}}
+async function activate(){if(!WORKBOOK||!confirm("Activate this branch now? The system will create separate branch data and temporary staff logins."))return;const btn=$("#activateBtn");busy(btn,true,"Activating…");try{const r=await call("self_create",{workbook:WORKBOOK});CREDENTIALS=r.temporary_passwords||[];BRANCH_CODE=r.branch?.branch_code||WORKBOOK.Branch?.[0]?.["Branch Code"]||"";setStatus("Branch activated successfully. Save the credentials below.","good");renderCredentials(r);$("#validateBtn").disabled=true;btn.disabled=true}catch(e){setStatus(e.message,"bad");btn.disabled=false}finally{if(!btn.disabled)busy(btn,false,"Activate Branch")}}
+function renderCredentials(r){const card=$("#credentialsCard"),body=$("#credentialsBody");card.classList.remove("hidden");$("#activationMessage").innerHTML=`Branch <b>${esc(BRANCH_CODE)}</b> is active. Use this Branch Code on the staff login screen.`;body.innerHTML=CREDENTIALS.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.role)}</td><td>${esc(x.username)}</td><td><code>${esc(x.temporary_password)}</code></td></tr>`).join("");$("#loginLink").href=`https://syllabuslagging.pages.dev/?branch=${encodeURIComponent(BRANCH_CODE)}`;card.scrollIntoView({behavior:"smooth",block:"start"})}
+function downloadCredentials(){if(!CREDENTIALS.length)return;const q=v=>`"${String(v??"").replaceAll('"','""')}"`,csv=["Branch Code,Name,Role,Username,Temporary Password",...CREDENTIALS.map(x=>[BRANCH_CODE,x.name,x.role,x.username,x.temporary_password].map(q).join(","))].join("\n"),blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`${BRANCH_CODE||"Branch"}_Syllabus_Tracker_Logins.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+async function init(){
+ $("#downloadTemplate").onclick=downloadTemplate;$("#workbookFile").onchange=fileChanged;$("#validateBtn").onclick=validate;$("#activateBtn").onclick=activate;$("#downloadCredentials").onclick=downloadCredentials;
+ if(!TOKEN){setStatus("This setup link is incomplete. Please ask for the authorized branch setup link.","bad");return}
+ try{await call("self_status");setStatus("Setup link verified. Download the template or upload your completed workbook.","good");$("#validateBtn").disabled=true}catch(e){setStatus(e.message,"bad");$("#downloadTemplate").disabled=true;$("#workbookFile").disabled=true}
+}
+init();
+</script>
+</body>
+</html>
