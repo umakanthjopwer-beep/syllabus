@@ -21,7 +21,7 @@ Each branch owns its own users, Dean/Super Admin, HODs, teachers, sections/inter
 
 ## Roles
 - Platform Admin: optional future cross-branch role.
-- Branch Super Admin: Dean of that branch only.
+- Branch Super Admin: Dean of that branch only. Internally stored as the existing `Super Admin` role for authorization compatibility.
 - Principal/Admin: branch-level administration.
 - HOD: department scope inside one branch.
 - Teacher: own mappings inside one branch.
@@ -31,6 +31,7 @@ Each branch owns its own users, Dean/Super Admin, HODs, teachers, sections/inter
 - Browser branch-context helper plus server-side branch authorization.
 - Branch-aware login/session/data gateway and common-app branch identity.
 - Branch Onboarding screen, Excel adapter, validation/staging workflow and full dummy Branch 2 simulation.
+- Branch onboarding activation preserves all existing repository/application state while appending new branch-owned records.
 - Branch-aware `syllabus-api` draft.
 - Branch-aware replacements for `weekly-entry-access`, `yearplan-weeks-all`, `syllabus-impersonate`, `yearplan-smart-api`, `seed-staff-users`, and controlled `syllabus-recover-admin`.
 - Shared Edge Function branch auth helper.
@@ -42,6 +43,7 @@ Each branch owns its own users, Dean/Super Admin, HODs, teachers, sections/inter
 - Read-only production baseline and orphan/collision audit.
 - Same-branch database relationship constraint design and branch-specific `branch_settings`.
 - Zero-cost migration/backfill simulator.
+- Full end-to-end zero-cost cutover rehearsal with Khalsa Branch 1 and dummy Branch 2.
 
 ## Verified zero-cost test status
 - Branch isolation: 14/14 passed.
@@ -55,8 +57,18 @@ Each branch owns its own users, Dean/Super Admin, HODs, teachers, sections/inter
 - Branch-aware `syllabus-api` static security checks: 31/31 passed.
 - Supporting Edge Function security suite: 36/36 passed.
 - Common app / publisher security checks: 15/15 passed.
+- Full cutover rehearsal: 82/82 passed.
 - TypeScript parse check for the core API draft: passed.
-- **Total executed checks: 196/196 passed.**
+- **Total executed checks: 278/278 passed.**
+
+## Full cutover rehearsal
+The end-to-end rehearsal covered onboarding, duplicate usernames across branches, branch-code login, sessions, bootstrap, HOD/Teacher scope, Year Plans, Weekly Status, reports, impersonation, weekly-entry controls, recovery, storage separation, historical Khalsa preservation and deliberate cross-branch attack attempts.
+
+Two issues were caught and fixed during rehearsal:
+1. Dean onboarding role was normalized from `Branch Super Admin` to internal `Super Admin` so existing authorization gates work correctly.
+2. Onboarding activation now preserves unrelated existing application/repository state instead of rebuilding only onboarding collections.
+
+See `FULL_CUTOVER_REHEARSAL_RESULT.md` for the full result.
 
 ## Read-only production preflight status
 - No case-insensitive collisions found for usernames, teacher names, section names, internal batch codes or subject names.
@@ -73,7 +85,7 @@ Each branch owns its own users, Dean/Super Admin, HODs, teachers, sections/inter
 5. Add database same-branch constraints and branch-specific settings.
 6. Smoke-test Khalsa role by role: Super Admin, Principal/Admin, HOD and Teacher.
 7. Verify historical Year Plans, Weekly Status and reports remain intact.
-8. Run deliberate cross-branch attack tests with a dummy/new Branch 2.
+8. Run deliberate post-migration cross-branch attack tests with a dummy/new Branch 2.
 9. Activate branch onboarding only after all isolation tests pass.
 10. Enable additional branches only after explicit approval.
 
