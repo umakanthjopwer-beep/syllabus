@@ -81,17 +81,18 @@ export function stageBranchOnboarding(workbook,{existingBranchCodes=[]}={}){
     department:String(row['Department']??'').trim(),
     username:String(row['Mobile Number / Login Username']??'').trim(),
     employee_code:String(row['Employee ID / Code (if available)']??'').trim(),
-    role:'HOD'
+    role:'HOD',
+    access_enabled:true
   }));
 
-  const branch={id:branchId,...validation.normalized.branch};
+  const branch={id:branchId,...validation.normalized.branch,active:true};
   const deanRow=workbook.Branch[0];
   const dean={
     id:makeId(branchCode,'user',0,deanRow['Dean Mobile Number / Login Username']),
     branch_id:branchId,
     name:String(deanRow['Dean / Branch Super Admin Name']??'').trim(),
     username:String(deanRow['Dean Mobile Number / Login Username']??'').trim(),
-    role:'Branch Super Admin',
+    role:'Super Admin',
     access_enabled:true
   };
 
