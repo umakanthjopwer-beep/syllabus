@@ -5,6 +5,8 @@
   window.CURRENT_SYLLABUS_BRANCH=window.CURRENT_SYLLABUS_BRANCH||null;
 
   function txt(v){return String(v??"").trim()}
+  const URL_BRANCH_CODE=txt(new URLSearchParams(location.search).get("branch"));
+  if(URL_BRANCH_CODE)localStorage.setItem(BRANCH_CODE_KEY,URL_BRANCH_CODE.toUpperCase());
   function branch(){return window.CURRENT_SYLLABUS_BRANCH||null}
   function schoolName(){return txt(branch()?.school_name)||"Sri Chaitanya School"}
   function branchName(){return txt(branch()?.branch_name)||txt(branch()?.branch_code)||"Syllabus Tracker"}
@@ -28,7 +30,7 @@
     input.setAttribute("autocapitalize","characters");
     input.setAttribute("spellcheck","false");
     input.placeholder="Branch Code (optional if username is unique)";
-    input.value=txt(localStorage.getItem(BRANCH_CODE_KEY));
+    input.value=URL_BRANCH_CODE||txt(localStorage.getItem(BRANCH_CODE_KEY));
     label.appendChild(input);
     const userLabel=user.closest("label");
     userLabel?.parentNode?.insertBefore(label,userLabel);
