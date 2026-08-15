@@ -124,6 +124,7 @@ export function activateStagedBranch(stagedPackage,repository){
     throw new Error('Branch already exists in repository.');
   }
   const next={
+    ...repository,
     branches:[...(repository.branches||[]),stagedPackage.staged.branch],
     users:[...(repository.users||[]),...stagedPackage.staged.users],
     teachers:[...(repository.teachers||[]),...stagedPackage.staged.teachers],
