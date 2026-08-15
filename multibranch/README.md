@@ -9,6 +9,11 @@ This folder is intentionally isolated from the current Khalsa production app.
 - No paid Supabase development branch is being used; testing is zero-cost and mock/local/read-only where possible.
 - No multi-branch Edge Function draft in this folder is deployed to production.
 
+## Branch status
+- `multibranch-integration` is the current development branch. It contains the latest `main` Khalsa source plus all multi-branch work.
+- `multibranch-foundation` is retained unchanged as a backup development snapshot.
+- `main` remains the production source and does not contain the multi-branch folder.
+
 ## Target architecture
 One common Syllabus Tracker application serves multiple school branches. Every school-data query is scoped by `branch_id` derived from the authenticated server session, never trusted from the browser.
 
@@ -73,4 +78,4 @@ Each branch owns its own users, Dean/Super Admin, HODs, teachers, sections/inter
 10. Enable additional branches only after explicit approval.
 
 ## Current status
-Production remains single-branch. The multi-branch architecture, onboarding, branch-wise login/data access, all 10 Edge Function replacement/hardening paths, migration/cutover/rollback package, and two-branch isolation simulation exist only on `multibranch-foundation`.
+Production remains single-branch and unchanged. The current multi-branch development work is on `multibranch-integration`, synchronized with the latest `main`. No multi-branch schema or Edge Function has been deployed to production.
