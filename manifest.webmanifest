@@ -1,7 +1,7 @@
 {
-  "name": "Khalsa CBSE Syllabus Tracker",
+  "name": "Syllabus Tracker",
   "short_name": "Syllabus Tracker",
-  "description": "Sri Chaitanya School – Khalsa CBSE Branch weekly syllabus lagging tracker",
+  "description": "Multi-branch weekly syllabus progress and lagging tracker",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
