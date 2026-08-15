@@ -1,8 +1,8 @@
-# Multi-Branch Production Status — 15 Aug 2026
+# Multi-Branch Production Status — 16 Aug 2026
 
 ## Current state
 
-The production Supabase database has been migrated from the former single-branch schema to a branch-owned schema.
+The production Supabase database uses branch-owned data isolation.
 
 Current real branch:
 - Branch Code: `KHALSA-CBSE`
@@ -11,9 +11,9 @@ Current real branch:
 - Location: `Hayathnagar`
 - Academic Year: `2026-27`
 
-No real second branch has been onboarded yet. The central Platform Admin onboarding workflow is now prepared for the next real branch.
+No real second branch has been onboarded yet. Other authorized branches can now self-onboard from a secure invitation link without using the Platform Admin account.
 
-## Final verified Khalsa counts
+## Verified Khalsa counts
 
 - App users: 30
 - Teachers: 34
@@ -29,36 +29,25 @@ No real second branch has been onboarded yet. The central Platform Admin onboard
 Verification after migration:
 - Null `branch_id` rows across branch-owned tables: 0
 - Checked cross-branch relationship mismatches: 0
-- Production branch rows: exactly 1 (`KHALSA-CBSE`)
+- Real production branches before the first external onboarding: exactly 1 (`KHALSA-CBSE`)
 
-## Database isolation now enforced
+## Database isolation
 
 Branch ownership is stored on users, sessions, teachers, sections, subjects, teaching mappings, user scopes, weekly-entry requests, Weekly Status, Year Plans, Year Plan links/weeks and safe recapture state.
 
-Database-level same-branch composite foreign keys reject cross-branch relationships. Per-branch uniqueness allows normal labels such as teacher names, usernames, section names, internal batch codes and subject names to be reused by different branches without sharing their records.
+Database-level same-branch composite foreign keys reject cross-branch relationships. Per-branch uniqueness allows normal labels such as teacher names, usernames, section names, internal batch codes and subject names to be reused by different branches without sharing records.
 
-A deliberate dummy Branch 2 attack rehearsal was run inside a database transaction and rolled back. It verified:
-- same normal labels can exist in two branches;
-- a session cannot claim a different branch from its user;
-- a teaching mapping cannot combine records from two branches;
-- Weekly Status cannot be submitted across branches.
+A deliberate dummy Branch 2 attack rehearsal was run inside a database transaction and rolled back. It verified that cross-branch sessions, mappings and Weekly Status writes are rejected.
 
-The dummy branch/data did not persist because the test ended in `ROLLBACK`.
+## Data API security
 
-## Data API security hardening
+Direct browser access to sensitive operational tables is closed. RLS is enabled and the application uses branch-aware server functions with service-role access plus explicit server-derived branch filtering.
 
-The former direct Data API exposure was closed for:
-- `app_settings`
-- `weekly_entry_requests`
-- `safe_yearplan_recapture_state`
-
-Direct `anon` / `authenticated` privileges were revoked and RLS enabled. The externally executable SECURITY DEFINER trigger RPC was also closed, and the flagged recapture trigger functions now use a pinned search path.
-
-The post-cutover Supabase Security Advisor has no ERROR/WARN findings from the previously identified blockers. Remaining notices are informational `RLS enabled no policy` items, intentional for tables accessed by server-side custom-session Edge Functions rather than direct browser policies.
+The post-cutover Supabase Security Advisor has no ERROR/WARN findings from the previously identified blockers. Remaining `RLS enabled no policy` notices are informational and intentional for tables accessed through server-side custom-session functions.
 
 ## Production Edge Functions
 
-The original 10 production functions use the prepared branch-aware/hardened path:
+The original branch-aware/hardened functions remain active, including:
 - `syllabus-api` v3
 - `syllabus-app` v3
 - `publish-syllabus-app` v7
@@ -70,59 +59,58 @@ The original 10 production functions use the prepared branch-aware/hardened path
 - `syllabus-impersonate` v2
 - `yearplan-weeks-all` v3
 
-A new platform-only function is also ACTIVE:
-- `branch-onboarding` v1
+Branch onboarding functions:
+- `branch-onboarding` v2 — Platform Admin plus secure invitation-token self-service validation/activation
+- `branch-setup` v1 — direct web setup page endpoint
 
-The reviewed multi-branch functions are pinned to immutable source commits. Post-deployment logs recorded successful HTTP 200 production requests on the branch-aware `syllabus-api`, `weekly-entry-access`, `yearplan-weeks-all`, and `yearplan-smart-api` versions.
+## Self-service branch onboarding
 
-## Platform Admin / branch onboarding
+The system owner no longer needs to collect or enter another branch's data.
 
-`platform_admins` is now a server-only control table with RLS enabled and no direct `anon` / `authenticated` table access. The current Khalsa Super Admin is registered as the active Platform Admin.
+An authorized branch receives one secure setup invitation link. From that page the branch can:
+1. Download the standard Excel onboarding template.
+2. Fill its own Branch, Classes_Sections, Teachers, Subjects, Teaching_Mappings and HODs data.
+3. Upload the workbook itself.
+4. Run server-side validation before anything is created.
+5. Activate its own branch after validation passes.
+6. Receive its own Branch Code and temporary Dean/HOD/Teacher passwords.
+7. Download its credentials immediately.
+8. Open the normal Syllabus Tracker login with its Branch Code prefilled.
+9. Upload and manage its own Year Plans after login.
+10. Open/close its own Weekly Status entry as Branch Super Admin.
 
-The Platform Admin branch onboarding flow supports:
-1. Downloading a standard Excel template.
-2. Uploading a completed workbook containing Branch, Classes_Sections, Teachers, Subjects, Teaching_Mappings and HODs sheets.
-3. Server-side validation of branch code, duplicate labels/logins, class/batch references, subjects, departments, teachers and mapping periods.
-4. Creating a new branch initially as `active = false`.
-5. Creating only that branch's sections, subjects, teachers, mappings and user scopes.
-6. Automatically creating Dean/Super Admin, HOD and active Teacher logins with temporary passwords.
-7. Activating the branch only after the full onboarding succeeds.
-8. Starting the new branch's weekly-entry control as CLOSED.
+The invitation token is stored only as a SHA-256 hash in server-side settings. Self-registration is enabled with a maximum of 50 registered branches. Workbook row limits also protect the service from oversized registrations.
 
-If onboarding fails, the branch is not activated; cleanup is attempted immediately. Khalsa records are never copied into the new branch.
+A new branch is inserted as inactive first. It becomes active only after all classes, subjects, teachers, mappings, users, scopes and branch settings are created successfully. If onboarding fails, cleanup is attempted and the branch is not activated.
+
+Khalsa academic data is never copied into a new branch.
 
 ## Year Plan source status
 
-All 52 Year Plans now have `parse_status = parsed`; partial plans: 0.
+All 52 existing Khalsa Year Plans have `parse_status = parsed`; partial plans: 0.
 
-The Class VI Lead Hindi plan was repaired from the exact original Library source:
-- 42 missing dated rows added;
-- final dated rows: 49;
-- coverage: 11 Jun 2026 through 24 Mar 2027.
+The Class VI Lead Hindi plan was repaired from the exact original Library source with 42 missing dated rows added, giving 49 dated rows through 24 Mar 2027. Weekly Status remained at 154 during that repair.
 
-Weekly Status remained at 154 during this repair; no Weekly Status history was overwritten.
-
-48 Year Plans have central Supabase Storage objects. Four legacy plans still have `storage_path = null`, but their exact original files were verified in the user's ChatGPT Library and their captured database rows were checked. They are retained as legacy Library-backed sources; they have not been falsely marked as uploaded to Supabase Storage.
+48 Year Plans have central Supabase Storage objects. Four legacy plans remain Library-backed with `storage_path = null`; their captured database rows and original Library sources were verified.
 
 ## Frontend source
 
 GitHub `main` now contains:
-- `app-multibranch-ui.js` — optional Branch Code login, authenticated branch identity and branch-aware PDF/Excel report identity;
-- `app-branch-onboarding.js` — Platform Admin template/download/validate/activate/credentials workflow;
-- `app.js` loader v58;
-- service worker cache `khalsa-syllabus-v29`;
+- `app-multibranch-ui.js` — optional Branch Code login, authenticated branch identity, branch-aware reports, and Branch Code prefill from branch login links;
+- `app-branch-onboarding.js` — Platform Admin onboarding workspace;
+- `branch-setup.html` — self-service external branch setup page;
+- `app.js` loader v59;
+- service worker cache `khalsa-syllabus-v30`;
 - branch-neutral PWA manifest (`Syllabus Tracker`).
 
-Existing Khalsa usernames remain backward compatible: Branch Code can be left blank while the username is unique. If the same username later exists in multiple branches, the server requires Branch Code to disambiguate the login.
-
-The source changes are committed to `main`. Cloudflare Pages deployment of the public `pages.dev` frontend is not independently verified by the available connectors, so this document does not claim a specific frontend deployment timestamp.
+Existing Khalsa usernames remain backward compatible: Branch Code can be left blank while the username is unique. When the same username exists in multiple branches, Branch Code is required to disambiguate login.
 
 ## Isolation rule
 
-A branch user can only access that branch's users, teachers, sections, subjects, mappings, Year Plans, Weekly Status, reports, entry controls and impersonation targets. Browser-supplied branch identifiers are not authoritative; the server derives branch ownership from the authenticated application session.
+A normal branch user can only access that branch's users, teachers, sections, subjects, mappings, Year Plans, Weekly Status, reports, entry controls and same-branch impersonation targets. Browser-supplied branch identifiers are not authoritative; the server derives branch ownership from the authenticated application session.
 
-The Platform Admin onboarding service can create branch-owned data but does not merge or copy one branch's academic data into another branch.
+Self-service onboarding can create a new branch but cannot access or copy another branch's academic records.
 
-## Next real-branch action
+## Owner's ongoing role
 
-The technical multi-branch foundation and onboarding workflow are ready. The only item that cannot be completed without external branch-specific information is creation of a real second branch: its completed onboarding workbook/data must exist first. No dummy or invented real branch data is kept in production.
+For another trusted branch, the owner only needs to share the secure setup invitation link. The receiving branch is responsible for its own workbook, validation, activation, credentials, Year Plans, staff access and weekly tracking. The owner does not need to prepare or upload their branch data.
