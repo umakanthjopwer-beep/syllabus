@@ -48,10 +48,10 @@ Each branch owns its own users, Dean/Super Admin, HODs, teachers, sections/inter
 - Common-app branch identity: 6/6 passed.
 - Migration/backfill simulator: 39/39 passed.
 - Branch-aware `syllabus-api` static security checks: 31/31 passed.
+- Supporting Edge Function security suite: 36/36 passed.
 - Common app / publisher security checks: 15/15 passed.
 - TypeScript parse check for the core API draft: passed.
-- **Total executed checks: 160/160 passed.**
-- Supporting Edge Function review suite is prepared and remains part of the deployment gate.
+- **Total executed checks: 196/196 passed.**
 
 ## Read-only production preflight status
 - No case-insensitive collisions found for usernames, teacher names, section names, internal batch codes or subject names.
