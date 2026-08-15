@@ -29,9 +29,10 @@ Development audit only. Based on the current production Edge Function inventory.
 - shared branch auth helper: `edge-shared-branch-auth.ts`
 
 ## Security verification
-- Core multi-branch tests previously executed: 145/145 passed.
-- Common app / publisher static security checks: 15/15 passed.
-- Supporting Edge Function review suite is present and remains a deployment-gate suite.
+- Core multi-branch tests: 145/145 passed.
+- Supporting Edge Function security suite: 36/36 passed.
+- Common app / publisher security checks: 15/15 passed.
+- **Total executed zero-cost checks: 196/196 passed.**
 
 ## Activation gate
 All 10 current production Edge Functions now have a replacement/hardening path prepared in development. This does **not** mean production is multi-branch yet. Branch 2 remains blocked until the production schema migration, function deployment, common-app conversion, Khalsa role-by-role smoke tests, and deliberate cross-branch attack tests are explicitly approved and completed.
