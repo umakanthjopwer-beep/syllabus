@@ -63,8 +63,12 @@ function pdfRowsFromLayout(items,pageText,layout){
       let a=pdfCell(region,bounds,"a"),b=pdfCell(region,bounds,"b");
       if(!a&&layout.a!=null)a=pdfBroadTopic(region.filter(x=>x.x>=layout.a&&(layout.b==null||x.x<layout.b)),{...layout,topic:layout.a},bounds);
       if(!b&&layout.b!=null)b=pdfBroadTopic(region.filter(x=>x.x>=layout.b),{...layout,topic:layout.b},bounds);
-      if(a&&!/^Track\s*[-–—]?\s*A$/i.test(a.trim()))out.push({grade,subject:"Track A",startDate:r.start,endDate:r.end,workingDays:days,plannedPeriods:period,topic:(a+(activity?` | ${activity}`:"")).trim()});
-      if(b&&!/^Track\s*[-–—]?\s*B$/i.test(b.trim()))out.push({grade,subject:"Track B",startDate:r.start,endDate:r.end,workingDays:days,plannedPeriods:period,topic:(b+(activity?` | ${activity}`:"")).trim()});
+      const aTopic=a&&!/^Track\s*[-–—]?\s*A$/i.test(a.trim())?(a+(activity?` | ${activity}`:"")).trim():"";
+      const bTopic=b&&!/^Track\s*[-–—]?\s*B$/i.test(b.trim())?(b+(activity?` | ${activity}`:"")).trim():"";
+      // Keep placeholder rows for dated source anchors even when a merged cell has no text at that Y position.
+      // A later pass can then propagate a merged exam/holiday/event block across every affected source date row.
+      out.push({grade,subject:"Track A",startDate:r.start,endDate:r.end,workingDays:days,plannedPeriods:period,topic:aTopic});
+      out.push({grade,subject:"Track B",startDate:r.start,endDate:r.end,workingDays:days,plannedPeriods:period,topic:bTopic});
       continue
     }
     let topic=pdfCell(region,bounds,"topic");if(!topic&&periodText&&!/^\d+$/.test(periodText.trim()))topic=periodText;if(!topic&&activity)topic=`Activity: ${activity}`;if(!topic&&days>0)topic=pdfBroadTopic(region,layout,bounds);
@@ -76,6 +80,18 @@ function pdfMergeRows(primary,extra){
   const map=new Map();for(const r of [...primary,...extra]){const k=`${r.grade??""}|${canonicalSubject(r.subject||"")}|${r.startDate||""}|${r.endDate||r.startDate||""}`,old=map.get(k);if(!old){map.set(k,{...r});continue}if(!String(old.topic||"").trim()&&String(r.topic||"").trim())old.topic=r.topic;if(String(r.topic||"").trim().length>String(old.topic||"").trim().length)old.topic=r.topic;if(old.workingDays==null&&r.workingDays!=null)old.workingDays=r.workingDays;if(old.plannedPeriods==null&&r.plannedPeriods!=null)old.plannedPeriods=r.plannedPeriods}
   return[...map.values()]
 }
+function pdfTextDateSpan(text){
+  const hits=[...String(text||"").matchAll(/\b(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{2,4})\b/g)].map(m=>pdfDateToken(`${m[1]}-${m[2]}-${m[3]}`)).filter(Boolean);if(hits.length<2)return null;let start=hits[0],end=hits[1];if(end<start){const t=start;start=end;end=t}return{start,end}
+}
+function pdfOverlap(a,b,c,d){return!!a&&!!c&&a<=d&&(b||a)>=c}
+function pdfWeakMergedFragment(text){const t=String(text||"").trim();return!t||/^\(?\s*tentatively\s*\)?[.!]?$/i.test(t)}
+function pdfSharedCalendarEvent(text){return/\b(exams?|assessment|tests?|holidays?|vacation|break|term\s*exam|unit\s*test)\b/i.test(String(text||""))}
+function pdfPropagateMergedDatedEvents(rows){
+  const out=(rows||[]).map(r=>({...r})),events=[];
+  for(const r of out){const span=pdfTextDateSpan(r.topic);if(!span)continue;const fragments=out.filter(x=>Number(x.grade||0)===Number(r.grade||0)&&x.startDate===r.startDate&&(x.endDate||x.startDate)===(r.endDate||r.startDate)&&x!==r&&pdfWeakMergedFragment(x.topic)).map(x=>String(x.topic||"").trim()).filter(Boolean);const topic=[String(r.topic||"").trim(),...fragments].join(" ").replace(/\s+/g," ").trim();events.push({grade:r.grade,start:span.start,end:span.end,topic,shared:pdfSharedCalendarEvent(topic)})}
+  for(const e of events){for(const r of out){if(Number(r.grade||0)!==Number(e.grade||0)||!/^Track [AB]$/i.test(canonicalSubject(r.subject||""))||!pdfOverlap(r.startDate,r.endDate||r.startDate,e.start,e.end))continue;if(e.shared||pdfWeakMergedFragment(r.topic))r.topic=e.topic}}
+  return pdfMergeRows([],out)
+}
 const _smartParseBase=smartParse;
 smartParse=async function(file){
   const ext=file.name.split(".").pop().toLowerCase();if(ext!=="pdf")return _smartParseBase(file);
@@ -86,5 +102,5 @@ smartParse=async function(file){
     const parseText=[pageText,gradeContext,subjectContext].filter(Boolean).join(" "),nextLayout=pdfLayout(items,layoutContext);if(nextLayout)layoutContext=nextLayout;
     const parsed=pdfRowsFromLayout(items,parseText,layoutContext);rows.push(...parsed);text+=pageText+"\n"
   }
-  const d=smartDetection(file,text,pdf.numPages,pdfMergeRows([],rows));d.pdfContinuationLayout=true;return d
+  const repaired=pdfPropagateMergedDatedEvents(pdfMergeRows([],rows)),d=smartDetection(file,text,pdf.numPages,repaired);d.pdfContinuationLayout=true;d.pdfMergedDatedEventRepair=true;return d
 };
