@@ -29,7 +29,7 @@ const workbook={
 const khalsaBranchId='branch-khalsa-cbse';
 let repository={
   branches:[{id:khalsaBranchId,branch_code:'KHALSA-CBSE',branch_name:'Khalsa CBSE Branch'}],
-  users:[{id:'khalsa-dean',branch_id:khalsaBranchId,name:'Khalsa Dean',role:'Branch Super Admin'}],
+  users:[{id:'khalsa-dean',branch_id:khalsaBranchId,name:'Khalsa Dean',role:'Super Admin'}],
   teachers:[{id:'khalsa-teacher-1',branch_id:khalsaBranchId,name:'Khalsa Teacher'}],
   sections:[{id:'khalsa-c5a',branch_id:khalsaBranchId,section:'6A',internal_batch:'C5A'}],
   subjects:[{id:'khalsa-bio',branch_id:khalsaBranchId,name:'Biology',department:'Biology'}],
@@ -47,7 +47,7 @@ assert.equal(scopeRows(repository.sections,khalsaBranchId).length,1);
 assert.equal(scopeRows(repository.sections,testBranchId).length,2);
 assert.equal(scopeRows(repository.sections,testBranchId)[0].internal_batch,'C5A');
 assert.equal(scopeRows(repository.sections,khalsaBranchId)[0].internal_batch,'C5A');
-assert.equal(scopeRows(repository.users,testBranchId).filter(x=>x.role==='Branch Super Admin').length,1);
+assert.equal(scopeRows(repository.users,testBranchId).filter(x=>x.role==='Super Admin').length,1);
 assert.equal(scopeRows(repository.users,testBranchId).filter(x=>x.role==='HOD').length,2);
 assert.equal(scopeRows(repository.teachers,testBranchId).length,2);
 assert.equal(scopeRows(repository.mappings,testBranchId).length,2);
