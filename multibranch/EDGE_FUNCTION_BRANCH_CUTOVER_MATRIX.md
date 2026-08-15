@@ -2,28 +2,36 @@
 
 Development audit only. Based on the current production Edge Function inventory. No live function was changed.
 
-| Function | Current multi-branch risk | Required before second branch | Development status |
+| Function | Current production risk | Required before second branch | Development status |
 |---|---|---|---|
-| `syllabus-api` | Global table reads/writes; current hard-coded bootstrap path has no branch ownership | Full server-derived `branch_id` on login/session/bootstrap/users/weekly/year plans | Branch-aware replacement draft prepared; not deployed |
-| `yearplan-weeks-all` | Pages all Year Plan data globally before role filtering | Authenticate session+branch, page only `.eq(branch_id, session.branch_id)`, scope links/subjects/mappings by same branch | Branch-aware replacement prepared; not deployed |
-| `weekly-entry-access` | Uses global `app_settings.weekly_entry`; requests/status lookups are global | Use `branch_settings`, branch-owned sessions/requests/weekly records and branch-scoped controller queue | Branch-aware replacement prepared; not deployed |
-| `syllabus-impersonate` | Super Admin can target a user globally by ID; impersonated session has no branch ownership | Caller and target must have same branch unless a future Platform Admin explicitly has cross-branch permission; stamp session branch | Branch-aware replacement prepared; not deployed |
-| `yearplan-smart-api` | Save/catalog operate globally; storage path is not branch-prefixed | Branch-scope subject/section/plan/link/week rows; prefix new files with branch ID | Branch-aware replacement prepared; not deployed |
-| `seed-staff-users` | Enumerates all teachers and creates users/scopes globally | Run only inside caller branch, or retire after onboarding workflow is enabled | Branch-aware replacement prepared; retirement still preferred after onboarding is active |
-| `syllabus-recover-admin` | Hard-coded account recovery selects username globally and is unauthenticated except legacy secret/password | Must not remain as a global multi-branch recovery path | Controlled branch recovery replacement prepared using server-managed recovery key + Branch Code; not deployed |
-| `syllabus-app` | Application-serving helper; risk depends on whether it embeds branch-specific assumptions | Confirm it serves common assets only and does not expose branch data | Audit before cutover |
-| `syllabus-web` | Web-serving helper; risk depends on embedded branch identity/data | Confirm common assets only; no school-data authority | Audit before cutover |
-| `publish-syllabus-app` | Publishing utility is separate from data isolation; current callable surface should be restricted | Protect publishing authorization; ensure only reviewed common app assets can be published | Security hardening before final rollout |
+| `syllabus-api` | Global table reads/writes; hard-coded bootstrap path has no branch ownership | Server-derived `branch_id` on login/session/bootstrap/users/weekly/year plans | Branch-aware replacement draft prepared; not deployed |
+| `yearplan-weeks-all` | Pages Year Plan data globally before role filtering | Session+branch auth; page/query only owned branch | Branch-aware replacement prepared; not deployed |
+| `weekly-entry-access` | Uses global `app_settings.weekly_entry`; requests/status are global | `branch_settings` plus branch-owned requests/status/controller queue | Branch-aware replacement prepared; not deployed |
+| `syllabus-impersonate` | Super Admin can target a user globally; impersonated session has no branch | Caller/target same branch; stamp session branch | Branch-aware replacement prepared; not deployed |
+| `yearplan-smart-api` | Save/catalog global; storage path not branch-prefixed | Branch-scope plans/subjects/sections/links/weeks; branch-prefixed uploads | Branch-aware replacement prepared; not deployed |
+| `seed-staff-users` | Enumerates teachers and creates users/scopes globally | Caller-branch-only seeding or retirement | Branch-aware replacement prepared; retirement preferred after onboarding |
+| `syllabus-recover-admin` | Legacy hard-coded/global recovery path | Controlled branch recovery only | Branch-aware controlled recovery prepared; not deployed |
+| `syllabus-app` | Public asset proxy currently tied to Khalsa-era common app | Serve common assets only; no tenant authority | Generic common asset server prepared; not deployed |
+| `syllabus-web` | Hard-coded Khalsa title/loading identity | Generic pre-login launcher; branch identity after authenticated login | Generic multi-branch launcher prepared; not deployed |
+| `publish-syllabus-app` | Service-role publisher is callable without request authentication and overwrites public assets from moving `main` | Server-only publishing secret + exact reviewed Git commit + fixed file allowlist | Locked commit-pinned publisher prepared; not deployed |
 
-## Prepared supporting replacements
+## Prepared replacements
+- `syllabus-api-multibranch-draft.ts`
 - `edge-weekly-entry-access-multibranch.ts`
 - `edge-yearplan-weeks-all-multibranch.ts`
 - `edge-syllabus-impersonate-multibranch.ts`
 - `edge-yearplan-smart-api-multibranch.ts`
 - `edge-seed-staff-users-multibranch.ts`
 - `edge-syllabus-recover-admin-multibranch.ts`
-- shared authorization helper: `edge-shared-branch-auth.ts`
-- static review suite: `supporting-edge-functions-security-test.mjs`
+- `edge-syllabus-app-common.ts`
+- `edge-syllabus-web-common.ts`
+- `edge-publish-syllabus-app-secure.ts`
+- shared branch auth helper: `edge-shared-branch-auth.ts`
+
+## Security verification
+- Core multi-branch tests previously executed: 145/145 passed.
+- Common app / publisher static security checks: 15/15 passed.
+- Supporting Edge Function review suite is present and remains a deployment-gate suite.
 
 ## Activation gate
-A second branch must not be activated while any production data-bearing function can query or mutate school data without a server-derived branch filter. The prepared drafts above are development artifacts only; production remains blocked until schema migration, deployment, role-by-role smoke testing and cross-branch verification are explicitly approved and completed.
+All 10 current production Edge Functions now have a replacement/hardening path prepared in development. This does **not** mean production is multi-branch yet. Branch 2 remains blocked until the production schema migration, function deployment, common-app conversion, Khalsa role-by-role smoke tests, and deliberate cross-branch attack tests are explicitly approved and completed.
