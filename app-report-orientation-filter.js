@@ -28,6 +28,7 @@
     }
   }
   function populateOrientationFilter(){
+    try{if(typeof ensureReportWorkspace==="function")ensureReportWorkspace()}catch(e){}
     ensureOrientationFilter();const sel=document.getElementById("printReportOrientation");if(!sel)return;
     const values=[ALL_ORIENTATIONS,...reportOrientations()];
     const old=REPORT_STATE.orientation||sel.value||ALL_ORIENTATIONS;
