@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Branch-aware Weekly Status access with specific completed-week approval.
-import {cors,db,res,authBranch,requireOwnedId} from "https://raw.githubusercontent.com/umakanthjopwer-beep/syllabus/3fc68be4f700c3a14efa2c23019a5d34868fbb10/multibranch/edge-shared-branch-auth.ts";
+import {cors,db,res,authBranch,requireOwnedId} from "./edge-shared-branch-auth.ts";
 
 const CONTROL=new Set(["Super Admin","Admin"]);
 const LATE_REQUEST_ROLES=new Set(["Teacher","HOD"]);
