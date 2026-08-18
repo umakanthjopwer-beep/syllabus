@@ -1,17 +1,20 @@
 (async()=>{
-  const files=["legacy-data.js","app-base-secure.js","app-plans.js","app-tracking.js","app-admin.js","app-finalize.js","app-remote.js","app-smart-plans.js","app-pdf-plan-parser.js","app-yearplan-recapture-v2.js","app-plan-fixes.js","app-old-plan-migration.js","app-weekly-source-lock.js","app-yearplan-integrity-fix.js","app-teacher-scope.js","app-hod-viewonly.js","app-report-print.js","app-login-clean.js","app-public-url.js","app-session-report-fix.js","app-weekly-entry-control.js","app-weekly-edit-rules.js","app-completed-week-request.js","app-report-filing-layout.js","app-report-top-punch.js","app-excel-export-style.js","app-report-readable-print.js","app-user-password-admin.js","app-superadmin-impersonate.js","app-data-integrity-audit.js","app-week-calendar-v2.js","app-yearplan-week-engine.js","app-recapture-review.js","app-full-yearplan-data.js","app-bulk-recapture.js","app-autofill-hardening.js","app-my-yearplan.js","app-dashboard-actions.js","app-multibranch-ui.js","app-branch-onboarding.js","app-grade-section-display.js","app-report-orientation-filter.js","app-teacher-weekly-repair.js","app-weekly-entry-stability.js"];
+  const files=["legacy-data.js","app-base-secure.js","app-plans.js","app-tracking.js","app-admin.js","app-finalize.js","app-remote.js","app-smart-plans.js","app-pdf-plan-parser.js","app-yearplan-recapture-v2.js","app-plan-fixes.js","app-old-plan-migration.js","app-weekly-source-lock.js","app-yearplan-integrity-fix.js","app-teacher-scope.js","app-hod-viewonly.js","app-report-print.js","app-login-clean.js","app-public-url.js","app-session-report-fix.js","app-weekly-entry-control.js","app-weekly-edit-rules.js","app-completed-week-request.js","app-report-filing-layout.js","app-report-top-punch.js","app-excel-export-style.js","app-report-readable-print.js","app-user-password-admin.js","app-superadmin-impersonate.js","app-data-integrity-audit.js","app-week-calendar-v2.js","app-yearplan-week-engine.js","app-recapture-review.js","app-full-yearplan-data.js","app-bulk-recapture.js","app-autofill-hardening.js","app-my-yearplan.js","app-dashboard-actions.js","app-multibranch-ui.js","app-branch-onboarding.js","app-grade-section-display.js","app-report-orientation-filter.js","app-teacher-weekly-repair.js"];
+  const optional=new Set(["app-branch-onboarding.js","app-grade-section-display.js","app-report-orientation-filter.js","app-teacher-weekly-repair.js"]);
+  const skipped=[];
   for(const src of files){
     await new Promise((resolve,reject)=>{
       const s=document.createElement("script");
-      s.src=src+"?v=66";
+      s.src=src+"?v=67";
       s.onload=resolve;
-      s.onerror=()=>reject(new Error("Failed to load "+src));
+      s.onerror=()=>{const e=new Error("Failed to load "+src);if(optional.has(src)){console.warn(e);skipped.push(src);resolve()}else reject(e)};
       document.head.appendChild(s);
     });
   }
   init();
+  if(skipped.length)console.warn("Optional app modules skipped:",skipped.join(", "));
 })().catch(err=>{
-  console.error(err);
+  console.error("Syllabus Tracker startup error",err);
   const target=document.getElementById("loginError");
   if(target){target.textContent="App failed to load. Please refresh once.";target.classList.remove("hidden")}
 });
