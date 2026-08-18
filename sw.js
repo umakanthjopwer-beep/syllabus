@@ -1,10 +1,45 @@
-const CACHE="khalsa-syllabus-v39";
+const CACHE="khalsa-syllabus-v40";
 const CORE=[
-  "./","./index.html","./branch-setup.html","./styles.css","./app.js","./legacy-data.js","./app-base-secure.js","./app-plans.js","./app-tracking.js","./app-admin.js","./app-finalize.js","./app-remote.js","./app-smart-plans.js","./app-pdf-plan-parser.js","./app-yearplan-recapture-v2.js","./app-plan-fixes.js","./app-old-plan-migration.js","./app-weekly-source-lock.js","./app-yearplan-integrity-fix.js","./app-teacher-scope.js","./app-hod-viewonly.js","./app-report-print.js","./app-login-clean.js","./app-public-url.js","./app-session-report-fix.js","./app-weekly-entry-control.js","./app-weekly-edit-rules.js","./app-completed-week-request.js","./app-report-filing-layout.js","./app-report-top-punch.js","./app-excel-export-style.js","./app-report-readable-print.js","./app-user-password-admin.js","./app-superadmin-impersonate.js","./app-data-integrity-audit.js","./app-week-calendar-v2.js","./app-yearplan-week-engine.js","./app-recapture-review.js","./app-full-yearplan-data.js","./app-bulk-recapture.js","./app-autofill-hardening.js","./app-my-yearplan.js","./app-dashboard-actions.js","./app-multibranch-ui.js","./app-branch-onboarding.js","./app-grade-section-display.js","./app-report-orientation-filter.js","./app-weekly-controller.js","./manifest.webmanifest","./icon.svg"
+  "./","./index.html","./branch-setup.html","./styles.css","./app.js","./legacy-data.js","./app-base-secure.js","./app-plans.js","./app-tracking.js","./app-admin.js","./app-finalize.js","./app-remote.js","./app-smart-plans.js","./app-pdf-plan-parser.js","./app-yearplan-recapture-v2.js","./app-plan-fixes.js","./app-old-plan-migration.js","./app-weekly-source-lock.js","./app-yearplan-integrity-fix.js","./app-teacher-scope.js","./app-hod-viewonly.js","./app-report-print.js","./app-login-clean.js","./app-public-url.js","./app-session-report-fix.js","./app-weekly-entry-control.js","./app-weekly-edit-rules.js","./app-completed-week-request.js","./app-report-filing-layout.js","./app-report-top-punch.js","./app-excel-export-style.js","./app-report-readable-print.js","./app-user-password-admin.js","./app-superadmin-impersonate.js","./app-data-integrity-audit.js","./app-week-calendar-v2.js","./app-yearplan-week-engine.js","./app-recapture-review.js","./app-full-yearplan-data.js","./app-bulk-recapture.js","./app-autofill-hardening.js","./app-my-yearplan.js","./app-dashboard-actions.js","./app-multibranch-ui.js","./app-branch-onboarding.js","./app-grade-section-display.js","./app-report-orientation-filter.js","./app-weekly-controller.js","./app-teacher-weekly-repair.js","./app-weekly-entry-stability.js","./manifest.webmanifest","./icon.svg"
 ];
-self.addEventListener("install",event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
-self.addEventListener("activate",event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+
+// Cache files independently. A single optional/missing asset must never abort a new service-worker install.
+self.addEventListener("install",event=>event.waitUntil((async()=>{
+  const cache=await caches.open(CACHE);
+  await Promise.allSettled(CORE.map(async url=>{
+    try{
+      const response=await fetch(url,{cache:"reload"});
+      if(response.ok)await cache.put(url,response)
+    }catch(e){console.warn("Precache skipped",url,e)}
+  }));
+  await self.skipWaiting()
+})()));
+
+self.addEventListener("activate",event=>event.waitUntil((async()=>{
+  const keys=await caches.keys();
+  await Promise.all(keys.filter(k=>k!==CACHE&&k.startsWith("khalsa-syllabus-")).map(k=>caches.delete(k)));
+  await self.clients.claim()
+})()));
+
 self.addEventListener("fetch",event=>{
   if(event.request.method!=="GET")return;
-  event.respondWith(fetch(event.request).then(response=>{const copy=response.clone();caches.open(CACHE).then(c=>c.put(event.request,copy));return response}).catch(()=>caches.match(event.request).then(r=>r||caches.match("./index.html"))));
+  event.respondWith((async()=>{
+    try{
+      const response=await fetch(event.request);
+      if(response.ok){
+        const copy=response.clone();
+        caches.open(CACHE).then(c=>c.put(event.request,copy)).catch(()=>{})
+      }
+      return response
+    }catch(e){
+      const cached=await caches.match(event.request);
+      if(cached)return cached;
+      // Only page navigations may fall back to index.html. Never return HTML for a missing JS/CSS request.
+      if(event.request.mode==="navigate"){
+        const shell=await caches.match("./index.html");
+        if(shell)return shell
+      }
+      return Response.error()
+    }
+  })())
 });
