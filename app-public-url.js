@@ -2,11 +2,9 @@ const PUBLIC_APP_URL="https://syllabuslagging.pages.dev";
 appLink=function(){return PUBLIC_APP_URL};
 
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js?v=40",{updateViaCache:"none"}).catch(err=>console.warn("Service worker registration skipped",err));
+  navigator.serviceWorker.register("sw.js?v=41",{updateViaCache:"none"}).catch(err=>console.warn("Service worker registration skipped",err));
 }
 
-// Load the robust PDF row reader + final Monday-Saturday verifier.
-// The verifier is intentionally load-order safe with the existing week engine.
 window.yearPlanRepairReady=(async()=>{
   for(const src of ["app-pdf-week-repair.js?v=38","app-week-source-verify.js?v=38"]){
     await new Promise((resolve,reject)=>{const s=document.createElement("script");s.src=src;s.onload=resolve;s.onerror=()=>reject(new Error("Failed to load "+src));document.head.appendChild(s)})
@@ -14,7 +12,6 @@ window.yearPlanRepairReady=(async()=>{
   return true
 })().catch(err=>{console.error("Year Plan repair engine",err);return false});
 
-// One-click Re-capture for all Year Plan files currently listed as capture issues.
 (function(){
   function inject(){
     if(typeof currentUser==="undefined"||currentUser?.role!=="Super Admin")return;
