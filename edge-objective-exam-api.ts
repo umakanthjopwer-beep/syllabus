@@ -18,6 +18,8 @@ function clean(v:any){return String(v??"").trim()}
 function uniq(a:any[]){return[...new Set((a||[]).filter(Boolean))]}
 function safeName(v:string){return clean(v||"objective-exam").replace(/[^a-zA-Z0-9._-]/g,"_").slice(0,160)||"objective-exam"}
 function unb64(v:string){const s=atob(v),a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a}
+function bool(v:any){return v===true||v===1||String(v??"").toLowerCase()==="true"||String(v??"")==="1"}
+function isoDate(v:any){const s=clean(v);if(!s)return null;if(!/^\d{4}-\d{2}-\d{2}$/.test(s))throw new Error("Completion date must be a valid date.");return s}
 async function sha(v:string){const b=new Uint8Array(await crypto.subtle.digest("SHA-256",enc.encode(v)));let s="";for(const x of b)s+=String.fromCharCode(x);return btoa(s)}
 
 async function authBranch(req:Request){
@@ -121,14 +123,14 @@ async function saveSyllabus(user:any,x:any,branchId:string){
     const bySection=new Map<string,string|null>();for(const m of maps||[])if(!bySection.has(m.section_id))bySection.set(m.section_id,m.teacher_id||null);
     const scopeRows=sectionIds.map(section_id=>({branch_id:branchId,syllabus_id:syllabus.id,section_id,teacher_id:bySection.get(section_id)||null}));
     const{data:scopes,error:scErr}=await db.from("objective_exam_scopes").insert(scopeRows).select();if(scErr)throw scErr;
-    const topicRows:any[]=[];for(const scope of scopes||[])topics.forEach((topic_text:string,i:number)=>topicRows.push({branch_id:branchId,scope_id:scope.id,sequence_no:i+1,topic_text,coverage_status:"Not Started"}));
+    const topicRows:any[]=[];for(const scope of scopes||[])topics.forEach((topic_text:string,i:number)=>topicRows.push({branch_id:branchId,scope_id:scope.id,sequence_no:i+1,topic_text,coverage_status:"Not Started",is_current_topic:false}));
     const{error:tErr}=await db.from("objective_exam_topics").insert(topicRows);if(tErr)throw tErr;
     return{syllabus,scope_count:(scopes||[]).length,topic_count:topicRows.length,unmapped_sections:(scopes||[]).filter((s:any)=>!s.teacher_id).map((s:any)=>s.section_id)}
   }catch(e){await db.from("objective_exam_syllabi").delete().eq("branch_id",branchId).eq("id",syllabus.id);if(storagePath)await db.storage.from("year-plans").remove([storagePath]);throw e}
 }
 
 async function topicContext(topicId:string,branchId:string){
-  const{data:topic,error}=await db.from("objective_exam_topics").select("id,scope_id,coverage_status,topic_text").eq("branch_id",branchId).eq("id",topicId).maybeSingle();if(error)throw error;if(!topic)throw new Error("Objective Exam topic not found in this branch.");
+  const{data:topic,error}=await db.from("objective_exam_topics").select("*").eq("branch_id",branchId).eq("id",topicId).maybeSingle();if(error)throw error;if(!topic)throw new Error("Objective Exam topic not found in this branch.");
   const{data:scope,error:se}=await db.from("objective_exam_scopes").select("id,syllabus_id,section_id,teacher_id").eq("branch_id",branchId).eq("id",topic.scope_id).maybeSingle();if(se)throw se;if(!scope)throw new Error("Objective Exam scope not found.");
   const{data:syllabus,error:ye}=await db.from("objective_exam_syllabi").select("id,exam_id,subject_id").eq("branch_id",branchId).eq("id",scope.syllabus_id).maybeSingle();if(ye)throw ye;if(!syllabus)throw new Error("Objective Exam syllabus not found.");
   return{topic,scope,syllabus}
@@ -142,7 +144,19 @@ async function canUpdateTopic(user:any,ctx:any,branchId:string){
 async function updateTopic(user:any,x:any,branchId:string){
   const id=clean(x.topic_id),status=clean(x.coverage_status);if(!id)throw new Error("Topic is required.");if(!["Not Started","In Progress","Completed"].includes(status))throw new Error("Invalid coverage status.");
   const ctx=await topicContext(id,branchId);if(!await canUpdateTopic(user,ctx,branchId))throw new Error("This exam topic is outside your assigned scope.");
-  const{data,error}=await db.from("objective_exam_topics").update({coverage_status:status,teacher_note:clean(x.teacher_note)||null,updated_by:user.id,updated_at:new Date().toISOString()}).eq("branch_id",branchId).eq("id",id).select().single();if(error)throw error;return data
+  let isCurrent=bool(x.is_current_topic),periods:any=x.periods_required_to_complete,expected=isoDate(x.expected_completion_date);
+  if(periods==null||periods==="")periods=null;else{periods=Number(periods);if(!Number.isInteger(periods)||periods<0||periods>200)throw new Error("Remaining periods must be a whole number from 0 to 200.")}
+  if(status==="Completed"){isCurrent=false;periods=0}else if(isCurrent){
+    if(status==="Not Started")throw new Error("A current teaching topic must be In Progress or Completed.");
+    if(periods==null||periods<1)throw new Error("Enter remaining periods required to complete the current topic.");
+    if(!expected)throw new Error("Enter the expected completion date for the current topic.")
+  }
+  if(isCurrent){
+    const{error:clearErr}=await db.from("objective_exam_topics").update({is_current_topic:false}).eq("branch_id",branchId).eq("scope_id",ctx.scope.id).neq("id",id);if(clearErr)throw clearErr
+  }
+  const completedOn=status==="Completed"?(ctx.topic.completed_on||new Date().toISOString().slice(0,10)):null;
+  const patch={coverage_status:status,is_current_topic:isCurrent,periods_required_to_complete:periods,expected_completion_date:expected,completed_on:completedOn,teacher_note:clean(x.teacher_note)||null,updated_by:user.id,updated_at:new Date().toISOString()};
+  const{data,error}=await db.from("objective_exam_topics").update(patch).eq("branch_id",branchId).eq("id",id).select().single();if(error)throw error;return data
 }
 
 async function deleteSyllabus(user:any,x:any,branchId:string){
