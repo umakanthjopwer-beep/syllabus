@@ -82,7 +82,7 @@ async function scopedBootstrap(user:any,branch:any,branchId:string){
   }else if(user.role==="Teacher"){
     if(user.teacher_id){const ids=new Set(all.scopes.filter((x:any)=>x.teacher_id===user.teacher_id).map((x:any)=>x.syllabus_id));syllabusIds=[...ids]}
   }
-  const sid=new Set(syllabusIds),scopes=all.scopes.filter((x:any)=>sid.has(x.syllabus_id)),scopeIds=new Set(scopes.map((x:any)=>x.id)),syllabi=all.syllabi.filter((x:any)=>sid.has(x.id)),examIds=new Set(syllabi.map((x:any)=>x.exam_id)),exams=all.exams.filter((x:any)=>examIds.has(x.id)),topics=all.topics.filter((x:any)=>scopeIds.has(x.scope_id));
+  const sid=new Set(syllabusIds),scopes=all.scopes.filter((x:any)=>sid.has(x.syllabus_id)),scopeIds=new Set(scopes.map((x:any)=>x.id)),syllabi=all.syllabi.filter((x:any)=>sid.has(x.id)),visibleExamIds=new Set(syllabi.map((x:any)=>x.exam_id)),exams=(READ_ALL.has(user.role)||user.role==="HOD")?all.exams:all.exams.filter((x:any)=>visibleExamIds.has(x.id)),topics=all.topics.filter((x:any)=>scopeIds.has(x.scope_id));
   return{
     branch:{id:branch.id,branch_code:branch.branch_code,branch_name:branch.branch_name,school_name:branch.school_name,academic_year:branch.academic_year},
     role:user.role,teacher_id:user.teacher_id||null,
@@ -95,7 +95,8 @@ async function saveExam(user:any,x:any,branchId:string){
   if(!ADMIN.has(user.role)&&user.role!=="HOD")throw new Error("Only Admin/Super Admin/HOD can create Objective Exams.");
   const name=clean(x.exam_name),date=clean(x.exam_date);if(!name)throw new Error("Exam Name is required.");if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw new Error("Exam Date is required.");
   if(x.id){
-    await owned("objective_exams",x.id,branchId,"Objective Exam");
+    const{data:old,error:oe}=await db.from("objective_exams").select("id,created_by").eq("branch_id",branchId).eq("id",x.id).maybeSingle();if(oe)throw oe;if(!old)throw new Error("Objective Exam was not found in this branch.");
+    if(user.role==="HOD"&&old.created_by!==user.id)throw new Error("HOD users can edit only Objective Exams they created. You can still add your department syllabus to this exam.");
     const{data,error}=await db.from("objective_exams").update({exam_name:name,exam_code:clean(x.exam_code)||null,exam_date:date,notes:clean(x.notes)||null,status:["draft","published","closed"].includes(x.status)?x.status:"published",updated_at:new Date().toISOString()}).eq("branch_id",branchId).eq("id",x.id).select().single();if(error)throw error;return data
   }
   const{data,error}=await db.from("objective_exams").insert({branch_id:branchId,exam_name:name,exam_code:clean(x.exam_code)||null,exam_date:date,notes:clean(x.notes)||null,status:"published",created_by:user.id}).select().single();if(error)throw error;return data
