@@ -144,7 +144,10 @@ async function canUpdateTopic(user:any,ctx:any,branchId:string){
 async function updateTopic(user:any,x:any,branchId:string){
   const id=clean(x.topic_id),status=clean(x.coverage_status);if(!id)throw new Error("Topic is required.");if(!["Not Started","In Progress","Completed"].includes(status))throw new Error("Invalid coverage status.");
   const ctx=await topicContext(id,branchId);if(!await canUpdateTopic(user,ctx,branchId))throw new Error("This exam topic is outside your assigned scope.");
-  let isCurrent=bool(x.is_current_topic),periods:any=x.periods_required_to_complete,expected=isoDate(x.expected_completion_date);
+  const hasCurrent=Object.prototype.hasOwnProperty.call(x,"is_current_topic"),hasPeriods=Object.prototype.hasOwnProperty.call(x,"periods_required_to_complete"),hasExpected=Object.prototype.hasOwnProperty.call(x,"expected_completion_date");
+  let isCurrent=hasCurrent?bool(x.is_current_topic):!!ctx.topic.is_current_topic;
+  let periods:any=hasPeriods?x.periods_required_to_complete:ctx.topic.periods_required_to_complete;
+  let expected:any=hasExpected?isoDate(x.expected_completion_date):(ctx.topic.expected_completion_date||null);
   if(periods==null||periods==="")periods=null;else{periods=Number(periods);if(!Number.isInteger(periods)||periods<0||periods>200)throw new Error("Remaining periods must be a whole number from 0 to 200.")}
   if(status==="Completed"){isCurrent=false;periods=0}else if(isCurrent){
     if(status==="Not Started")throw new Error("A current teaching topic must be In Progress or Completed.");
