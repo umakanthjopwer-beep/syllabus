@@ -1,7 +1,7 @@
 (async()=>{
-  const BUILD="82";
-  const RECOVERY_KEY="syllabus_startup_recovery_v82";
-  const files=["legacy-data.js","app-base-secure.js","app-plans.js","app-tracking.js","app-admin.js","app-finalize.js","app-remote.js","app-smart-plans.js","app-pdf-plan-parser.js","app-yearplan-recapture-v2.js","app-plan-fixes.js","app-old-plan-migration.js","app-weekly-source-lock.js","app-yearplan-integrity-fix.js","app-teacher-scope.js","app-hod-viewonly.js","app-report-print.js","app-login-clean.js","app-public-url.js","app-session-report-fix.js","app-weekly-entry-control.js","app-weekly-edit-rules.js","app-completed-week-request.js","app-report-filing-layout.js","app-report-top-punch.js","app-excel-export-style.js","app-report-readable-print.js","app-user-password-admin.js","app-superadmin-impersonate.js","app-data-integrity-audit.js","app-week-calendar-v2.js","app-yearplan-week-engine.js","app-recapture-review.js","app-full-yearplan-data.js","app-bulk-recapture.js","app-autofill-hardening.js","app-my-yearplan.js","app-dashboard-actions.js","app-exam-syllabus-lagging.js","app-exam-syllabus-auto-map.js","app-exam-cbatch-detector-v2.js","app-exam-pdf-subject-recovery-v3.js","app-exam-mapping-lexical-fix-v4.js","app-exam-ocr-actual-subjects-v5.js","app-exam-actual-pdf-authority-v6.js","app-exam-syllabus-auto-init.js","app-exam-syllabus-navigation-fix.js","app-multibranch-ui.js","app-branch-onboarding.js","app-grade-section-display.js","app-report-orientation-filter.js","app-weekly-controller.js","app-objective-exams.js","app-objective-exam-entry.js","app-objective-exam-planning.js"];
+  const BUILD="83";
+  const RECOVERY_KEY="syllabus_startup_recovery_v83";
+  const files=["legacy-data.js","app-base-secure.js","app-plans.js","app-tracking.js","app-admin.js","app-finalize.js","app-remote.js","app-smart-plans.js","app-pdf-plan-parser.js","app-yearplan-recapture-v2.js","app-plan-fixes.js","app-old-plan-migration.js","app-weekly-source-lock.js","app-yearplan-integrity-fix.js","app-teacher-scope.js","app-hod-viewonly.js","app-report-print.js","app-login-clean.js","app-public-url.js","app-session-report-fix.js","app-weekly-entry-control.js","app-weekly-edit-rules.js","app-completed-week-request.js","app-report-filing-layout.js","app-report-top-punch.js","app-excel-export-style.js","app-report-readable-print.js","app-user-password-admin.js","app-superadmin-impersonate.js","app-data-integrity-audit.js","app-week-calendar-v2.js","app-yearplan-week-engine.js","app-recapture-review.js","app-full-yearplan-data.js","app-bulk-recapture.js","app-autofill-hardening.js","app-my-yearplan.js","app-dashboard-actions.js","app-exam-syllabus-lagging.js","app-exam-syllabus-auto-map.js","app-exam-actual-pdf-strict-v7.js","app-exam-syllabus-auto-init.js","app-exam-syllabus-navigation-fix.js","app-multibranch-ui.js","app-branch-onboarding.js","app-grade-section-display.js","app-report-orientation-filter.js","app-weekly-controller.js","app-objective-exams.js","app-objective-exam-entry.js","app-objective-exam-planning.js"];
   const optional=new Set(["app-branch-onboarding.js","app-grade-section-display.js","app-report-orientation-filter.js","app-objective-exams.js","app-objective-exam-entry.js","app-objective-exam-planning.js"]);
   const skipped=[];
   window.__SYLLABUS_BUILD__=BUILD;
@@ -37,7 +37,7 @@
   if(skipped.length)console.warn("Optional app modules skipped:",skipped.join(", "));
 })().catch(async err=>{
   console.error("Syllabus Tracker startup error",err);
-  const RECOVERY_KEY="syllabus_startup_recovery_v82";
+  const RECOVERY_KEY="syllabus_startup_recovery_v83";
   const detail=String(err?.message||err||"Unknown startup error");
   const failed=window.__SYLLABUS_LOAD_DIAGNOSTICS__?.failed||"";
   if(!sessionStorage.getItem(RECOVERY_KEY)){
