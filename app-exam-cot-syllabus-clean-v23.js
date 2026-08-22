@@ -18,11 +18,12 @@
     if(/\b(?:MATH|PHYSICS|CHEMISTRY)\s*:\s*\d+\s*Q\b/i.test(s)||/\b\d+\s*Q\b/i.test(s))return"";
     s=bestNumbered(s);
     s=s.replace(/\bP\s+[Il1]\b(?=\s*\()/gi,"")
-       .replace(/\bSRP\s*:\s*[A-Za-z]?\b\s*$/i,"")
+       .replace(/\s*:\s*[A-Za-z]\s*$/i,"")
+       .replace(/\s+[A-Za-z]\s+[A-Za-z]\s*$/i,"")
        .replace(/\s+(?:Ph|Ch|Pi|Pl|Il)\s*$/i,"")
        .replace(/\s*[:;,]\s*$/g,"")
        .replace(/\s+/g," ").trim();
-    if(!s||/^SRP\s*:?$/i.test(s)||score(s)<4)return"";
+    if(!s||/^SRP\s*:?$/i.test(s)||/^\(?\s*Aim\s*:/i.test(s)||score(s)<4)return"";
     return s
   }
   function cleanList(list){const out=[];for(const x of list||[]){const s=cleanTopic(x);if(s&&!out.some(y=>y.toLowerCase()===s.toLowerCase()))out.push(s)}return out}
@@ -37,24 +38,30 @@
   }
   function verifiedOverrides(raw,name){
     const m=new Map();
-    if(!/\bC4\b/i.test(raw)||!/03[.\/-]09[.\/-]26/.test(raw)||!/CUMULATIVE\s+OBJECTIVE\s+TEST/i.test(raw))return m;
-    if(/Polynomials/i.test(raw)&&/Aim\s*:\s*3\s*to\s*6/i.test(raw))m.set("Track A",["Polynomials (Aim: 3 to 6)"]);
-    if(/Arithmetic\s+Expressions/i.test(raw)&&/A\s+Peek\s+Beyond\s+the\s+Point/i.test(raw))m.set("Track B",["1) Arithmetic Expressions","2) A Peek Beyond the Point"]);
-    if(/Basic\s+Mechanics/i.test(raw)&&/Electricity/i.test(raw)&&/Units\s+and\s+Conversions/i.test(raw))m.set("Physics",["1) Basic Mechanics","2) Electricity","3) Units and Conversions"]);
-    if(/Changes\s+around\s+us/i.test(raw)&&/Physical\s+and\s+Chemical/i.test(raw)&&/Concepts\s+of\s+SRP/i.test(raw)&&/Goal\s+1\s+to\s+4/i.test(raw))m.set("Chemistry",["1) Changes around us - Physical and Chemical","2) Concepts of SRP - Goal 1 to 4"]);
+    if(!/CUMULATIVE\s+OBJECTIVE\s+TEST/i.test(raw))return m;
+    const aim=raw.match(/\b([A-Za-z][A-Za-z ]{2,45}?)\s*\(\s*Aim\s*:\s*(\d+)\s*to\s*(\d+)\s*\)/i);
+    if(aim){let chapter=txt(aim[1]).replace(/^(?:CLASS|MATHEMATICS|TRACK\s*-?\s*A)\s+/i,"").trim();const bits=chapter.split(/\s+/);if(bits.length>6)chapter=bits.slice(-6).join(" ");if(score(chapter)>=4)m.set("Track A",[`${chapter} (Aim: ${aim[2]} to ${aim[3]})`])}
+    if(/\bC4\b/i.test(raw)&&/03[.\/-]09[.\/-]26/.test(raw)){
+      if(/Polynomials/i.test(raw)&&/Aim\s*:\s*3\s*to\s*6/i.test(raw))m.set("Track A",["Polynomials (Aim: 3 to 6)"]);
+      if(/Arithmetic\s+Expressions/i.test(raw)&&/A\s+Peek\s+Beyond\s+the\s+Point/i.test(raw))m.set("Track B",["1) Arithmetic Expressions","2) A Peek Beyond the Point"]);
+      if(/Basic\s+Mechanics/i.test(raw)&&/Electricity/i.test(raw)&&/Units\s+and\s+Conversions/i.test(raw))m.set("Physics",["1) Basic Mechanics","2) Electricity","3) Units and Conversions"]);
+      if(/Changes\s+around\s+us/i.test(raw)&&/Physical\s+and\s+Chemical/i.test(raw)&&/Concepts\s+of\s+SRP/i.test(raw)&&/Goal\s+1\s+to\s+4/i.test(raw))m.set("Chemistry",["1) Changes around us - Physical and Chemical","2) Concepts of SRP - Goal 1 to 4"])
+    }
     return m
   }
   function subjectNameById(id){try{return canonicalSubject(REMOTE?.subjectById?.get(id)?.name||"")||""}catch(_){return""}}
+  function renderTopics(cell,topics){cell.innerHTML="";const strong=document.createElement("strong");strong.textContent=`${topics.length} topic(s)`;const d=document.createElement("details"),sum=document.createElement("summary"),box=document.createElement("div");sum.textContent="View syllabus";sum.style.cssText="cursor:pointer;color:#345f91";box.style.cssText="max-width:330px;white-space:normal;margin-top:5px";topics.forEach((t,i)=>{if(i)box.appendChild(document.createElement("br"));box.appendChild(document.createTextNode("• "+t))});d.append(sum,box);cell.append(strong,d)}
   function patchDisplay(){
     if(!active)return;active.overridePromise.then(overrides=>{
+      let invalid=false;
       qa("#examAutoMappings tbody tr").forEach(tr=>{
         const tds=tr.querySelectorAll("td");if(tds.length<5)return;const sub=txt(tds[2].textContent),cell=tds[4],details=cell.querySelector("details");
         let topics=overrides.get(sub)||[];
-        if(!topics.length&&details){const div=details.querySelector("div");if(div){const tmp=document.createElement("div");tmp.innerHTML=div.innerHTML;topics=cleanList([...tmp.childNodes].map(n=>n.textContent).filter(Boolean))}}
-        if(!topics.length)return;
-        cell.innerHTML="";const strong=document.createElement("strong");strong.textContent=`${topics.length} topic(s)`;const d=document.createElement("details"),sum=document.createElement("summary"),box=document.createElement("div");sum.textContent="View syllabus";sum.style.cssText="cursor:pointer;color:#345f91";box.style.cssText="max-width:330px;white-space:normal;margin-top:5px";topics.forEach((t,i)=>{if(i)box.appendChild(document.createElement("br"));box.appendChild(document.createTextNode("• "+t))});d.append(sum,box);cell.append(strong,d)
+        if(!topics.length&&details){const div=details.querySelector("div");if(div)topics=cleanList([...div.childNodes].map(n=>n.textContent).filter(Boolean))}
+        if(topics.length)renderTopics(cell,topics);else{invalid=true;cell.innerHTML='<span style="color:#a43c36;font-weight:700">No clean syllabus topic detected — review/re-upload required</span>'}
       });
-      const msg=q("#examAutoMsg");if(msg&&/C Batch COT/i.test(q("#examAutoName")?.value||"")){msg.textContent="C-Batch COT syllabus cleaned: NOTE, question-count, marks and OMR instructions are excluded. Review View syllabus before save.";msg.classList.remove("exam-auto-bad");msg.classList.add("exam-auto-good")}
+      const btn=q("#examAutoSave");if(btn&&invalid)btn.disabled=true;
+      const msg=q("#examAutoMsg");if(msg&&/C Batch COT/i.test(q("#examAutoName")?.value||"")){msg.textContent=invalid?"C-Batch COT detected, but at least one subject has no clean syllabus topic. Save is disabled until the PDF is read correctly.":"C-Batch COT syllabus cleaned: NOTE, question-count, marks and OMR instructions are excluded. Review View syllabus before save.";msg.classList.toggle("exam-auto-bad",invalid);msg.classList.toggle("exam-auto-good",!invalid)}
     })
   }
   function watchFile(){const input=q("#examAutoPdf"),f=input?.files?.[0];if(!f||!isCot(f.name))return;const key=[f.name,f.size,f.lastModified].join("|");if(key!==lastKey){lastKey=key;active={file:f,name:f.name,overridePromise:pdfText(f).then(raw=>verifiedOverrides(raw,f.name))};[250,600,1200,2200,3500].forEach(ms=>setTimeout(patchDisplay,ms))}else patchDisplay()}
