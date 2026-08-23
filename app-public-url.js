@@ -2,7 +2,7 @@ const PUBLIC_APP_URL="https://syllabuslagging.pages.dev";
 appLink=function(){return PUBLIC_APP_URL};
 
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js?v=77",{updateViaCache:"none"}).catch(err=>console.warn("Service worker registration skipped",err));
+  navigator.serviceWorker.register("sw.js?v=78",{updateViaCache:"none"}).catch(err=>console.warn("Service worker registration skipped",err));
 }
 
 // Session persistence hardening.
