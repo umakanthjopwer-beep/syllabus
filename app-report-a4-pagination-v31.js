@@ -30,7 +30,7 @@
   function paginate(rows,m){
     if(!rows?.length)return[[]];
     const groups=[];let group=[],page=pageShell(m),body=page.querySelector("tbody");
-    const safetyPx=6; // about 1.5 mm; protects Chrome/PDF rounding without wasting a large part of the page.
+    const safetyPx=7;
     for(let i=0;i<rows.length;i++){
       const holder=document.createElement("tbody");holder.innerHTML=rowHtml(rows[i],i+1);const tr=holder.firstElementChild;body.appendChild(tr);
       void page.offsetHeight;
@@ -51,10 +51,10 @@
     .a4-v31-pages{display:grid;gap:${printing?"0":"18px"};justify-items:center;background:#fff}
     .a4-v31-page{font-family:Arial,sans-serif;color:#000;background:#fff;box-sizing:border-box;overflow:hidden;padding:7mm;margin:0;${printing?"":"border:1px solid #ccd3dc;box-shadow:0 4px 16px rgba(0,0,0,.08);"}}
     .a4-v31-page.landscape{width:297mm;height:210mm}.a4-v31-page.portrait{width:210mm;height:297mm}
-    .a4-v31-title{text-align:center;font-family:Georgia,serif;font-weight:700;line-height:1.05;margin:0 0 .45mm;font-size:13pt}.a4-v31-sub{text-align:center;font-size:8pt;line-height:1.05;margin:0 0 1.15mm}
-    .a4-v31-meta,.a4-v31-table{width:100%;border-collapse:collapse;table-layout:fixed;margin:0}.a4-v31-meta td{border:1px solid #555;padding:.9mm 1mm;font-size:6.6pt;line-height:1.1;vertical-align:middle}.a4-v31-meta td:nth-child(1){width:33%}.a4-v31-meta td:nth-child(2){width:43%}.a4-v31-meta td:nth-child(3){width:24%}
-    .a4-v31-table th,.a4-v31-table td{border:1px solid #555;white-space:normal;overflow-wrap:anywhere;word-break:normal}.a4-v31-table th{font-size:5.7pt;line-height:1.04;padding:.65mm .42mm;text-align:center;vertical-align:middle;font-weight:700}.a4-v31-table td{font-size:6pt;line-height:1.08;padding:.66mm .44mm;text-align:center;vertical-align:top}.a4-v31-table td.left{text-align:left}.a4-v31-table td small{display:block;font-size:4.8pt;line-height:1.06;margin-top:.3mm}.a4-v31-subject{display:block;font-size:5.1pt;line-height:1.05;font-weight:700;margin-top:.32mm}.a4-v31-table tr{break-inside:avoid;page-break-inside:avoid}
-    .a4-v31-page.portrait .a4-v31-title{font-size:12pt}.a4-v31-page.portrait .a4-v31-sub{font-size:7.4pt}.a4-v31-page.portrait .a4-v31-meta td{font-size:5.8pt;padding:.8mm}.a4-v31-page.portrait .a4-v31-table th{font-size:4.75pt;padding:.58mm .3mm}.a4-v31-page.portrait .a4-v31-table td{font-size:5pt;line-height:1.06;padding:.58mm .32mm}.a4-v31-page.portrait .a4-v31-table td small{font-size:4.1pt}.a4-v31-page.portrait .a4-v31-subject{font-size:4.3pt}
+    .a4-v31-title{text-align:center;font-family:Georgia,serif;font-weight:700;line-height:1.08;margin:0 0 .55mm;font-size:14pt}.a4-v31-sub{text-align:center;font-size:9pt;line-height:1.08;margin:0 0 1.3mm}
+    .a4-v31-meta,.a4-v31-table{width:100%;border-collapse:collapse;table-layout:fixed;margin:0}.a4-v31-meta td{border:1px solid #444;padding:1mm 1.1mm;font-size:7.6pt;line-height:1.14;vertical-align:middle}.a4-v31-meta td:nth-child(1){width:33%}.a4-v31-meta td:nth-child(2){width:43%}.a4-v31-meta td:nth-child(3){width:24%}
+    .a4-v31-table th,.a4-v31-table td{border:1px solid #444;white-space:normal;overflow-wrap:anywhere;word-break:normal}.a4-v31-table th{font-size:7.1pt;line-height:1.1;padding:.75mm .48mm;text-align:center;vertical-align:middle;font-weight:700}.a4-v31-table td{font-size:7.5pt;line-height:1.15;padding:.78mm .5mm;text-align:center;vertical-align:top}.a4-v31-table td.left{text-align:left}.a4-v31-table td small{display:block;font-size:6pt;line-height:1.1;margin-top:.34mm}.a4-v31-subject{display:block;font-size:6.4pt;line-height:1.08;font-weight:700;margin-top:.34mm}.a4-v31-table tr{break-inside:avoid;page-break-inside:avoid}
+    .a4-v31-page.portrait .a4-v31-title{font-size:13pt}.a4-v31-page.portrait .a4-v31-sub{font-size:8.5pt}.a4-v31-page.portrait .a4-v31-meta td{font-size:7pt;padding:.9mm}.a4-v31-page.portrait .a4-v31-table th{font-size:6.3pt;padding:.66mm .34mm}.a4-v31-page.portrait .a4-v31-table td{font-size:6.8pt;line-height:1.13;padding:.68mm .36mm}.a4-v31-page.portrait .a4-v31-table td small{font-size:5.5pt}.a4-v31-page.portrait .a4-v31-subject{font-size:5.8pt}
     .a4-v31-measure{position:fixed!important;left:-30000px!important;top:0!important;visibility:hidden!important;border:0!important;box-shadow:none!important;z-index:-99999!important}
     @media(max-width:760px){.a4-v31-pages{justify-items:start;overflow:auto}}
   `}
