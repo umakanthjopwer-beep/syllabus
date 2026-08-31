@@ -1,4 +1,4 @@
-// Weekly Reports v35: continuous preview + native browser A4 pagination with full repeating header.
+// Weekly Reports v39: continuous preview + measured A4 pages for reliable Portrait/Landscape printing.
 (function(){
   const q=s=>document.querySelector(s);
   const txt=v=>String(v??"").trim();
@@ -17,7 +17,7 @@
   function classCell(r){const code=r.batch||r.section||"—";return `<b>${esc(code)}</b>${allSubjects()?`<span class="a4-v35-subject">${esc(r.subject||"")}</span>`:""}`}
   function rowHtml(r,index){return `<tr><td>${index}</td><td>${classCell(r)}</td><td>${r.workingDays??"—"}</td><td>${r.plannedPeriods??"—"}</td><td>${r.periodsTaken??"—"}</td><td class="left">${esc(r.plannedTopic||"—")}</td><td class="left">${esc(r.currentTopic||"Not submitted")}</td><td>${r.lagPeriods==null?"—":r.lagPeriods}</td><td class="left">${esc(r.reason||"—")}</td><td><b>${esc(r.teacher||"—")}</b><small>${esc(submittedAt(r))}</small></td></tr>`}
   function colgroup(){return `<colgroup><col style="width:3.5%"><col style="width:8%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:20.5%"><col style="width:20.5%"><col style="width:6%"><col style="width:12.5%"><col style="width:10.5%"></colgroup>`}
-  function repeatingHead(){
+  function headerHtml(){
     const subject=q("#printReportSubject")?.value||REPORT_STATE?.subject||REPORT_ALL_SUBJECTS;
     const week=typeof reportWeekLabel==="function"?reportWeekLabel(REPORT_STATE.weekStart,REPORT_STATE.weekEnd):"";
     const today=typeof reportDateNumeric==="function"?reportDateNumeric():"";
@@ -29,7 +29,7 @@
     </thead>`
   }
   function rowsNow(){try{return Array.isArray(REPORT_STATE?.rows)?REPORT_STATE.rows:reportFilteredRows()}catch(_){return[]}}
-  function reportHtml(rows){return `<div class="a4-v35-report ${mode()}"><table class="a4-v35-table">${colgroup()}${repeatingHead()}<tbody>${rows.length?rows.map((r,i)=>rowHtml(r,i+1)).join(""):`<tr><td colspan="10">No records available for the selected filters.</td></tr>`}</tbody></table></div>`}
+  function reportHtml(rows){return `<div class="a4-v35-report ${mode()}"><table class="a4-v35-table">${colgroup()}${headerHtml()}<tbody>${rows.length?rows.map((r,i)=>rowHtml(r,i+1)).join(""):`<tr><td colspan="10">No records available for the selected filters.</td></tr>`}</tbody></table></div>`}
 
   function baseCss(printing=false){return `
     *{box-sizing:border-box}
@@ -46,32 +46,45 @@
     .a4-v35-meta td:nth-child(1){width:33%}.a4-v35-meta td:nth-child(2){width:43%}.a4-v35-meta td:nth-child(3){width:24%}
     .a4-v35-columns th{font-size:7.5pt;line-height:1.12;padding:.75mm .45mm;text-align:center;vertical-align:middle;font-weight:700}
     .a4-v35-table tbody td{font-size:7.9pt;line-height:1.16;padding:.76mm .48mm;text-align:center;vertical-align:top}.a4-v35-table tbody td.left{text-align:left}.a4-v35-table tbody td small{display:block;font-size:6.4pt;line-height:1.1;margin-top:.3mm}.a4-v35-subject{display:block;font-size:6.7pt;line-height:1.08;font-weight:700;margin-top:.3mm}
-    .a4-v35-report.portrait .a4-v35-school{font-size:14pt}.a4-v35-report.portrait .a4-v35-status{font-size:9pt!important}.a4-v35-report.portrait .a4-v35-meta td{font-size:7.1pt;padding:.85mm}.a4-v35-report.portrait .a4-v35-columns th{font-size:6.15pt;padding:.55mm .25mm}.a4-v35-report.portrait .a4-v35-table tbody td{font-size:6.55pt;line-height:1.1;padding:.55mm .28mm}.a4-v35-report.portrait .a4-v35-table tbody td small{font-size:5.4pt}.a4-v35-report.portrait .a4-v35-subject{font-size:5.7pt}
-    .a4-v35-table thead{display:table-header-group}.a4-v35-table tfoot{display:table-footer-group}.a4-v35-table tbody tr,.a4-v35-table tbody td{break-inside:avoid;page-break-inside:avoid}
+    .portrait .a4-v35-school{font-size:14pt}.portrait .a4-v35-status{font-size:9pt!important}.portrait .a4-v35-meta td{font-size:7.1pt;padding:.85mm}.portrait .a4-v35-columns th{font-size:6.15pt;padding:.55mm .25mm}.portrait .a4-v35-table tbody td{font-size:6.55pt;line-height:1.1;padding:.55mm .28mm}.portrait .a4-v35-table tbody td small{font-size:5.4pt}.portrait .a4-v35-subject{font-size:5.7pt}
+    .a4-v35-table tbody tr,.a4-v35-table tbody td{break-inside:avoid;page-break-inside:avoid}
     ${printing?"":"@media(max-width:760px){#weeklyReportPreview{overflow-x:auto}.a4-v35-report{margin:0;min-width:210mm}.a4-v35-report.landscape{min-width:297mm}}"}
   `}
   function addStyles(){let s=q("#reportV35Styles");if(!s){s=document.createElement("style");s.id="reportV35Styles";document.head.appendChild(s)}s.textContent=baseCss(false)}
   function render(){const p=q("#weeklyReportPreview");if(!p)return;addStyles();p.innerHTML=reportHtml(rowsNow())}
 
-  function print35(){
+  function print39(){
     const m=mode(),rows=rowsNow();
     const w=window.open("","_blank");
     if(!w){alert("Please allow pop-ups for this site to print the report.");return}
-    const pageSize=m==="portrait"?"A4 portrait":"A4 landscape";
-    const html=`<!doctype html><html><head><meta charset="utf-8"><title>Weekly Syllabus Report</title><style>@page{size:${pageSize};margin:7mm}html,body{margin:0!important;padding:0!important;background:#fff!important}${baseCss(true)}.a4-v35-report{width:auto!important;padding:0!important;border:0!important;box-shadow:none!important}.a4-v35-table thead{display:table-header-group!important}.a4-v35-table tbody tr{break-inside:avoid!important;page-break-inside:avoid!important}</style></head><body>${reportHtml(rows)}</body></html>`;
+    const pageW=m==="portrait"?210:297,pageH=m==="portrait"?297:210;
+    const usableW=pageW-14,usableH=pageH-14;
+    const measureRows=rows.length?rows.map((r,i)=>rowHtml(r,i+1)).join(""):`<tr><td colspan="10">No records available for the selected filters.</td></tr>`;
+    const css=`@page{size:${pageW}mm ${pageH}mm;margin:7mm}html,body{margin:0!important;padding:0!important;background:#fff!important}${baseCss(true)}body{font-family:Arial,sans-serif}.print-pages{width:100%}.print-page{width:100%;margin:0;padding:0;break-after:page;page-break-after:always}.print-page:last-child{break-after:auto;page-break-after:auto}.print-page .a4-v35-table thead{display:table-row-group!important}.print-page .a4-v35-table tbody tr{break-inside:avoid!important;page-break-inside:avoid!important}.measure-wrap{position:absolute;left:-10000px;top:0;visibility:hidden;width:${usableW}mm}.measure-wrap .a4-v35-table thead{display:table-row-group!important}`;
+    const html=`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Weekly Syllabus Report</title><style>${css}</style></head><body class="${m}"><div id="measure" class="measure-wrap ${m}"><table id="measureTable" class="a4-v35-table">${colgroup()}${headerHtml()}<tbody>${measureRows}</tbody></table></div><main id="printPages" class="print-pages"></main></body></html>`;
     try{
-      w.document.open();w.document.write(html);w.document.close();
-      try{w.opener=null}catch(_){}
-      const fire=()=>setTimeout(()=>{try{w.focus();w.print()}catch(e){console.error("Print failed",e)}},220);
-      if(w.document.fonts?.ready)w.document.fonts.ready.then(fire).catch(fire);else fire()
+      w.document.open();w.document.write(html);w.document.close();try{w.opener=null}catch(_){}
+      const prepare=()=>{
+        try{
+          const d=w.document,table=d.getElementById("measureTable"),pages=d.getElementById("printPages");if(!table||!pages)throw new Error("Print measurement area was not created.");
+          const probe=d.createElement("div");probe.style.cssText="position:absolute;visibility:hidden;height:100mm;width:1px";d.body.appendChild(probe);const pxPerMm=probe.getBoundingClientRect().height/100||3.779527559;probe.remove();
+          const headerH=table.tHead?.getBoundingClientRect().height||0,rowEls=[...table.tBodies[0].rows],rowHs=rowEls.map(r=>Math.max(1,r.getBoundingClientRect().height));
+          const maxH=(usableH-2.5)*pxPerMm;const groups=[];let group=[],used=headerH;
+          rowHs.forEach((h,i)=>{if(group.length&&used+h>maxH){groups.push(group);group=[];used=headerH}group.push(i);used+=h});if(group.length)groups.push(group);if(!groups.length)groups.push([]);
+          pages.innerHTML=groups.map(g=>`<section class="print-page ${m}"><table class="a4-v35-table">${colgroup()}${headerHtml()}<tbody>${g.length?g.map(i=>rowHtml(rows[i],i+1)).join(""):`<tr><td colspan="10">No records available for the selected filters.</td></tr>`}</tbody></table></section>`).join("");
+          d.getElementById("measure")?.remove();
+          setTimeout(()=>{try{w.focus();w.print()}catch(e){console.error("Print failed",e)}},180)
+        }catch(e){console.error("Measured print preparation failed",e);try{w.close()}catch(_){}alert("Could not prepare the A4 report. Please refresh once and try again.")}
+      };
+      if(w.document.fonts?.ready)w.document.fonts.ready.then(()=>w.requestAnimationFrame(()=>w.requestAnimationFrame(prepare))).catch(prepare);else setTimeout(prepare,80)
     }catch(e){console.error("Print document failed",e);try{w.close()}catch(_){}alert("Could not prepare the print report. Please refresh once and try again.")}
   }
-  function bind(){const b=q("#printReportPdf");if(!b||b.dataset.v35)return;b.dataset.v35="1";b.addEventListener("click",e=>{e.preventDefault();e.stopImmediatePropagation();print35()},true)}
+  function bind(){const b=q("#printReportPdf");if(!b||b.dataset.v39)return;b.dataset.v39="1";b.addEventListener("click",e=>{e.preventDefault();e.stopImmediatePropagation();print39()},true)}
   function install(){
     if(installed||typeof renderReports!=="function")return;installed=true;addStyles();
-    const prev=renderReports;renderReports=function(){const out=prev.apply(this,arguments);try{render()}catch(e){console.warn("Native A4 v35 preview",e)}bind();return out};
-    bind();try{render()}catch(_){}window.__REPORT_A4_NATIVE_V35__=true
+    const prev=renderReports;renderReports=function(){const out=prev.apply(this,arguments);try{render()}catch(e){console.warn("A4 report preview",e)}bind();return out};
+    bind();try{render()}catch(_){}window.__REPORT_A4_MEASURED_V39__=true
   }
-  const obs=new MutationObserver(()=>{if(!installed&&q("#reports"))install();else if(installed)bind()});obs.observe(document.documentElement,{childList:true,subtree:true});
+  const obs=new MutationObserver(()=>{if(!installed&&q("#reports"))install();else if(installed)bind()});try{obs.observe(document.documentElement,{childList:true,subtree:true})}catch(_){}
   setTimeout(install,0)
 })();
