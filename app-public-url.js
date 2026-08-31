@@ -2,7 +2,7 @@ const PUBLIC_APP_URL="https://syllabuslagging.pages.dev";
 appLink=function(){return PUBLIC_APP_URL};
 
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js?v=82",{updateViaCache:"none"}).catch(err=>console.warn("Service worker registration skipped",err));
+  navigator.serviceWorker.register("sw.js?v=83",{updateViaCache:"none"}).catch(err=>console.warn("Service worker registration skipped",err));
 }
 
 // Session persistence hardening.
@@ -25,7 +25,6 @@ if("serviceWorker" in navigator){
     if(!r.ok){
       const e=new Error(out.error||`Request failed (${r.status})`);e.status=r.status;
       e.authExpired=needsAuth&&r.status===401&&authMessage.test(String(out.error||"Session expired"));
-      // Only remove the exact token used by this failed request. Old requests cannot wipe a newly-created session.
       if(e.authExpired&&remoteToken()===requestToken)localStorage.removeItem(REMOTE_TOKEN_KEY);
       throw e;
     }
@@ -50,7 +49,6 @@ if("serviceWorker" in navigator){
         localStorage.removeItem(REMOTE_TOKEN_KEY);
         try{showLoginError("Your session has expired. Please sign in again.")}catch(_){}
       }else{
-        // Preserve the valid login on temporary internet/server errors.
         try{showLoginError("Could not reconnect to the server. Your login is still saved; refresh once when the connection is stable.")}catch(_){}
       }
     }
