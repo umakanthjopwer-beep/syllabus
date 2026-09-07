@@ -18,7 +18,13 @@
     const sub=canonicalSubject(subject||"");
     return ownerMappings().some(m=>m.section===section&&canonicalSubject(m.subject)===sub)
   }
-  function ownerRow(row){return!!row&&ownerPair(row.section,row.subject)}
+  function ownerRow(row){
+    if(!row||!ownerPair(row.section,row.subject))return false;
+    const tid=currentUser?.teacherId||"";
+    if(tid&&row.teacherId)return row.teacherId===tid;
+    const alias=typeof loggedTeacherAlias==="function"?loggedTeacherAlias():currentUser?.name||"";
+    return !row.teacher||same(row.teacher,alias)
+  }
   function notFutureWeek(){
     try{const s=selectedWeeklyStart();return!!s&&s<=currentSchoolWeekStart()}catch(e){return false}
   }
