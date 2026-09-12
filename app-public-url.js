@@ -2,33 +2,38 @@ const PUBLIC_APP_URL="https://syllabuslagging.pages.dev";
 appLink=function(){return PUBLIC_APP_URL};
 
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js?v=93",{updateViaCache:"none"}).catch(err=>console.warn("Service worker registration skipped",err));
+  navigator.serviceWorker.register("sw.js?v=94",{updateViaCache:"none"}).catch(err=>console.warn("Service worker registration skipped",err));
 }
 
-// Session persistence hardening.
-// A stale 401 response must never delete a newer valid login token, and temporary network/startup errors must not log a user out.
+// Session persistence hardening + resilient API retry.
 (function(){
   const delay=ms=>new Promise(r=>setTimeout(r,ms));
   const authMessage=/session\s*(has\s*)?expired|invalid\s*(session|token)|unauthori[sz]ed|please\s+sign\s+in\s+again/i;
 
   remoteCall=async function(action,payload={},needsAuth=true){
-    const headers={"Content-Type":"application/json"};
     const requestToken=needsAuth?remoteToken():"";
-    if(needsAuth){
-      if(!requestToken){const e=new Error("Please sign in again.");e.status=401;e.authExpired=true;throw e}
-      headers.Authorization=`Bearer ${requestToken}`;
+    if(needsAuth&&!requestToken){const e=new Error("Please sign in again.");e.status=401;e.authExpired=true;throw e}
+    let lastError=null;
+    for(let attempt=0;attempt<3;attempt++){
+      const headers={"Content-Type":"application/json"};if(needsAuth)headers.Authorization=`Bearer ${requestToken}`;
+      try{
+        const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+        let r;try{r=await fetch(REMOTE_API,{method:"POST",headers,body:JSON.stringify({action,...payload}),signal:controller.signal})}finally{clearTimeout(timer)}
+        let out={};try{out=await r.json()}catch(_){}
+        if(!r.ok){
+          const e=new Error(out.error||`Request failed (${r.status})`);e.status=r.status;
+          e.authExpired=needsAuth&&r.status===401&&authMessage.test(String(out.error||"Session expired"));
+          if(e.authExpired&&remoteToken()===requestToken)localStorage.removeItem(REMOTE_TOKEN_KEY);
+          if(e.authExpired||r.status<500)throw e;
+          lastError=e
+        }else return out
+      }catch(e){
+        if(e?.authExpired||e?.status&&e.status<500)throw e;
+        lastError=e
+      }
+      if(attempt<2)await delay(500*(attempt+1))
     }
-    let r;
-    try{r=await fetch(REMOTE_API,{method:"POST",headers,body:JSON.stringify({action,...payload})})}
-    catch(networkError){const e=new Error("Unable to connect. Please check the internet connection and try again.");e.networkError=true;e.cause=networkError;throw e}
-    let out={};try{out=await r.json()}catch(_){}
-    if(!r.ok){
-      const e=new Error(out.error||`Request failed (${r.status})`);e.status=r.status;
-      e.authExpired=needsAuth&&r.status===401&&authMessage.test(String(out.error||"Session expired"));
-      if(e.authExpired&&remoteToken()===requestToken)localStorage.removeItem(REMOTE_TOKEN_KEY);
-      throw e;
-    }
-    return out;
+    const e=new Error("Could not reach the school server after 3 attempts. Your internet may still be working; please tap Login again in a few seconds.");e.networkError=true;e.cause=lastError;throw e
   };
 
   async function bootstrapWithRetry(attempts=3){
@@ -49,7 +54,7 @@ if("serviceWorker" in navigator){
         localStorage.removeItem(REMOTE_TOKEN_KEY);
         try{showLoginError("Your session has expired. Please sign in again.")}catch(_){}
       }else{
-        try{showLoginError("Could not reconnect to the server. Your login is still saved; refresh once when the connection is stable.")}catch(_){}
+        try{showLoginError("The school server could not be reached just now. Your saved login is unchanged; please retry in a few seconds.")}catch(_){}
       }
     }
   };
@@ -72,7 +77,7 @@ if("serviceWorker" in navigator){
     }finally{setBusy(btn,false)}
   };
 
-  window.__SESSION_PERSISTENCE_V29__=true;
+  window.__SESSION_PERSISTENCE_V30__=true;
 })();
 
 window.yearPlanRepairReady=(async()=>{
